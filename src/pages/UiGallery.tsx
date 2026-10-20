@@ -7,6 +7,7 @@ import { useTheme } from "@/theme/ThemeProvider";
 import {
   Badge, Button, Card, Checkbox, ChoiceCard, Chip, EmptyState, Field, GlassPanel, IconButton, Input, Radio, Rating,
   Select, Skeleton, SkeletonGroup, Switch, Textarea, Heart, Package, ShoppingCart, Trash2, Plus,
+  Dialog, Sheet, Popover, Tooltip, toast, Info,
 } from "@/ui";
 
 const BRANDS = ["#F5A524", "#FFF200", "#111111", "#7B7B7B", "#0B7285", "#C2255C", "#2F9E44"];
@@ -22,6 +23,8 @@ export default function UiGallery() {
   const [pressed, setPressed] = useState(true);
   const [brandInfo, setBrandInfo] = useState<string>("");
   const [pay, setPay] = useState("cod");
+  const [dlg, setDlg] = useState(false);
+  const [sheet, setSheet] = useState(false);
 
   return (
     <main className="container-page space-y-8">
@@ -109,6 +112,19 @@ export default function UiGallery() {
         <SkeletonGroup label="Loading products" className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Skeleton variant="card" /><Skeleton variant="card" /><Skeleton variant="card" className="hidden sm:block" /><Skeleton variant="card" className="hidden sm:block" /></SkeletonGroup>
         <Skeleton lines={3} />
         <Card><EmptyState icon={Package} title="No orders yet" description="When you place an order it will show up here." action={<Button>Start shopping</Button>} /></Card>
+      </Section>
+
+      <Section title="Overlays (lazy chunks)">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setDlg(true)}>Open dialog</Button>
+          <Button variant="secondary" onClick={() => setSheet(true)}>Open sheet</Button>
+          <Button variant="secondary" onClick={() => toast.success("Added to cart", { action: { label: "Undo", onClick: () => toast.info("Undone") } })}>Toast + undo</Button>
+          <Button variant="secondary" onClick={() => toast.error("Out of stock")}>Error toast</Button>
+          <Popover trigger={<IconButton icon={Info} label="Delivery info" variant="secondary" />}><p className="m-0 max-w-64">Free delivery over Rs. 5,000 in Kathmandu Valley.</p></Popover>
+          <Tooltip label="Wishlist"><IconButton icon={Heart} label="Wishlist tooltip" variant="secondary" /></Tooltip>
+        </div>
+        <Dialog open={dlg} onOpenChange={setDlg} title="Cancel this order?" description="The vendor will be told." closeLabel="Close"><div className="flex gap-2"><Button variant="danger" onClick={() => setDlg(false)}>Cancel order</Button><Button variant="secondary" onClick={() => setDlg(false)}>Keep order</Button></div></Dialog>
+        <Sheet open={sheet} onOpenChange={setSheet} title="Filters"><p className="m-0">Price, availability, category (Phase 3).</p><Button className="mt-4" onClick={() => setSheet(false)}>Apply</Button></Sheet>
       </Section>
 
       <Section title="Glass (floating layer only)">

@@ -41,6 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let alive = true;
+    // Initial session load: the state updates happen after an awaited network call, not synchronously.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh().finally(() => alive && setLoading(false));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       // Defer: calling Supabase inside this callback can deadlock the auth lock.

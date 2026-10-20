@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, ImageOff } from "@/ui";
+import { ShoppingCart, ImageOff, toast } from "@/ui";
 import { useCart } from "@/lib/cart";
 import { useT } from "@/lib/i18n";
 import { loadCartProducts } from "@/lib/api";
@@ -9,7 +9,7 @@ import { useQuery } from "@/lib/useQuery";
 import { Loading, useTitle } from "@/components/ui";
 
 export default function Cart() {
-  const { items, setQty, remove, clear } = useCart();
+  const { items, setQty, remove, clear, add } = useCart();
   const { t, locale } = useT();
   useTitle(t("cart.title"));
   const key = items.map((i) => i.productId).sort().join(",");
@@ -48,14 +48,14 @@ export default function Cart() {
                     <button className="btn btn-secondary !px-3 !py-1" aria-label="-" onClick={() => setQty(i.productId, i.quantity - 1)}>−</button>
                     <span className="w-8 text-center" aria-live="polite">{i.quantity}</span>
                     <button className="btn btn-secondary !px-3 !py-1" aria-label="+" onClick={() => setQty(i.productId, Math.min(l.available, i.quantity + 1))}>+</button>
-                    <button className="ml-auto text-sm underline" onClick={() => remove(i.productId)}>{t("cart.remove")}</button>
+                    <button className="ml-auto text-sm underline" onClick={() => { const qty = i.quantity; remove(i.productId); toast.info(t("cart.removed"), { action: { label: t("common.undo"), onClick: () => add(i.productId, qty) } }); }}>{t("cart.remove")}</button>
                   </div>
                 </div>
               </>
             ) : (
               <>
                 <p className="muted m-0 flex-1">{t("cart.unavailable")}</p>
-                <button className="text-sm underline" onClick={() => remove(i.productId)}>{t("cart.remove")}</button>
+                <button className="text-sm underline" onClick={() => { const qty = i.quantity; remove(i.productId); toast.info(t("cart.removed"), { action: { label: t("common.undo"), onClick: () => add(i.productId, qty) } }); }}>{t("cart.remove")}</button>
               </>
             )}
           </li>

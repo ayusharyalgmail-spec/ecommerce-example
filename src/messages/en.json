@@ -225,5 +225,10 @@
  "rating.label": "{value} out of 5, {count} reviews",
  "rating.stars": "{value} out of 5 stars",
  "common.saved": "Saved",
- "admin.primary_image": "Primary image"
+ "admin.primary_image": "Primary image",
+ "common.close": "Close",
+ "common.undo": "Undo",
+ "cart.removed": "Removed from cart",
+ "product.added_toast": "Added to cart",
+ "cart.view": "View cart"
 }

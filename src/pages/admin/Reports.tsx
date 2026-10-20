@@ -5,6 +5,8 @@ import { formatNpr } from "@/lib/money";
 import { useQuery } from "@/lib/useQuery";
 import { ErrorBox, Loading, useTitle } from "@/components/ui";
 
+const Th = ({ children, right }: { children: React.ReactNode; right?: boolean }) => <th className={`py-1 ${right ? "text-right" : "text-left"}`}>{children}</th>;
+
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
 export default function Reports() {
@@ -36,7 +38,6 @@ export default function Reports() {
   const rows = [...periods.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   const totalRev = rows.reduce((n, [, v]) => n + v.total, 0);
   const totalOrders = rows.reduce((n, [, v]) => n + v.n, 0);
-  const Th = ({ children, right }: { children: React.ReactNode; right?: boolean }) => <th className={`py-1 ${right ? "text-right" : "text-left"}`}>{children}</th>;
 
   return (
     <main className="space-y-4">

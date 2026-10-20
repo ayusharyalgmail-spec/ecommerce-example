@@ -28,7 +28,7 @@ export function ThemeProvider({ children, brandColor }: { children: React.ReactN
     setModeState(m);
     const root = document.documentElement;
     if (m === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", m);
-    try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch { /* storage blocked */ }
+    try { if (m === "system") localStorage.removeItem("theme"); else localStorage.setItem("theme", m); } catch { /* storage blocked */ }
   }, []);
 
   const setFxPref = useCallback((p: FxPref) => {

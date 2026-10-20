@@ -11,7 +11,7 @@ export function toCsv(rows: (string | number | null | undefined)[][]): string {
 export function parseCsv(text: string): Record<string, string>[] {
   const rows: string[][] = [];
   let row: string[] = [], cur = "", q = false;
-  const src = text.replace(/^﻿/, "");
+  const src = text.replace(/^\uFEFF/, "");
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
     if (q) {

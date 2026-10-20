@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/theme/ThemeProvider";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import Layout from "@/components/Chrome";
+import { ToastHost } from "@/ui";
 import { Loading, RequireAuth, RequireStaff } from "@/components/ui";
 
 import Home from "@/pages/Home";
@@ -97,6 +98,11 @@ const router = createBrowserRouter([
   },
 ]);
 
+function Toasts() {
+  const { t } = useT();
+  return <ToastHost closeLabel={t("common.close")} />;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -105,6 +111,7 @@ export default function App() {
           <AuthProvider>
             <CartProvider>
               <RouterProvider router={router} />
+              <Toasts />
             </CartProvider>
           </AuthProvider>
         </I18nProvider>

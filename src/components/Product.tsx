@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Heart, ImageOff, Rating } from "@/ui";
+import { Check, Heart, ImageOff, Rating, toast } from "@/ui";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/lib/cart";
 import { useT, pick, type Locale } from "@/lib/i18n";
@@ -10,6 +10,7 @@ import { toggleWishlist } from "@/lib/api";
 export function AddToCart({ productId, available, withQty = false }: { productId: string; available: number; withQty?: boolean }) {
   const { add } = useCart();
   const { t } = useT();
+  const nav = useNavigate();
   const [qty, setQty] = useState(1);
   const [done, setDone] = useState(false);
   const out = available <= 0;
@@ -20,7 +21,10 @@ export function AddToCart({ productId, available, withQty = false }: { productId
           onChange={(e) => setQty(Math.max(1, Math.min(available, Number(e.target.value) || 1)))} className="!w-20" />
       )}
       <button className="btn btn-primary flex-1" disabled={out}
-        onClick={() => { add(productId, qty); setDone(true); setTimeout(() => setDone(false), 1500); }}>
+        onClick={() => {
+          add(productId, qty); setDone(true); setTimeout(() => setDone(false), 1500);
+          toast.success(t("product.added_toast"), { action: { label: t("cart.view"), onClick: () => nav("/cart") } });
+        }}>
         {out ? t("product.out") : done ? <><Check aria-hidden size={20} strokeWidth={2} /> {t("product.added")}</> : t("product.add")}
       </button>
     </div>

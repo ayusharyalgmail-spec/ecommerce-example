@@ -24,9 +24,9 @@ export default function AdminOrders() {
   return (
     <main className="space-y-4">
       <h1 className="text-3xl font-bold">{t("admin.orders")}</h1>
-      <form className="grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={(e) => { e.preventDefault(); const n = new URLSearchParams(sp); const v = String(new FormData(e.currentTarget).get("q") ?? ""); v ? n.set("q", v) : n.delete("q"); setSp(n); }}>
+      <form className="grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={(e) => { e.preventDefault(); const n = new URLSearchParams(sp); const v = String(new FormData(e.currentTarget).get("q") ?? ""); if (v) n.set("q", v); else n.delete("q"); setSp(n); }}>
         <input name="q" defaultValue={sp.get("q") ?? ""} placeholder="ORD-… / 98…" aria-label="Search" />
-        <select value={status} aria-label={t("admin.status")} onChange={(e) => { const n = new URLSearchParams(sp); e.target.value ? n.set("status", e.target.value) : n.delete("status"); setSp(n); }}>
+        <select value={status} aria-label={t("admin.status")} onChange={(e) => { const n = new URLSearchParams(sp); if (e.target.value) n.set("status", e.target.value); else n.delete("status"); setSp(n); }}>
           <option value="">—</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
         </select>

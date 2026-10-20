@@ -37,5 +37,5 @@ export function applyFx(tier: FxTier) {
 }
 
 export function savePref(pref: FxPref) {
-  try { pref === "auto" ? localStorage.removeItem("fx") : localStorage.setItem("fx", pref); } catch { /* storage blocked */ }
+  try { if (pref === "auto") localStorage.removeItem("fx"); else localStorage.setItem("fx", pref); } catch { /* storage blocked */ }
 }

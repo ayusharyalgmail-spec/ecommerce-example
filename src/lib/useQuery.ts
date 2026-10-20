@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery as useTanQuery } from "@tanstack/react-query";
-import { useCallback, useId, useRef } from "react";
+import { useCallback, useId } from "react";
 
 /**
  * Compatibility shim: the original `useQuery(fn, deps)` signature, now running on TanStack Query.
@@ -9,11 +9,9 @@ import { useCallback, useId, useRef } from "react";
  */
 export function useQuery<T>(fn: () => Promise<T>, deps: readonly unknown[]) {
   const id = useId();
-  const fnRef = useRef(fn);
-  fnRef.current = fn;
   const q = useTanQuery({
     queryKey: ["legacy", id, ...deps],
-    queryFn: () => fnRef.current(),
+    queryFn: () => fn(), // options are refreshed every render, so this always calls the latest closure
     staleTime: 0,
     gcTime: 30_000,
     retry: false,
