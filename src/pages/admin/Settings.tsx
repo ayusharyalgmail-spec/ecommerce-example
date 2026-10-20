@@ -6,11 +6,18 @@ import { paisaToRupees } from "@/lib/money";
 import { useQuery } from "@/lib/useQuery";
 import { ErrorBox, Loading, OkBox, useTitle } from "@/components/ui";
 
+// Full row (operational fields included): only readable through admin_store_settings(), which needs settings.manage.
+type StoreSettingsRow = {
+  store_name: string; contact_phone: string | null; whatsapp_number: string | null; contact_email: string | null;
+  free_delivery_threshold_paisa: number | null; unconfirmed_expiry_hours: number;
+  payment_settings: unknown; business_info: unknown; policies: unknown;
+};
+
 export default function Settings() {
   const { t } = useT();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   useTitle(t("admin.settings"));
-  const { data: s, loading } = useQuery(async () => (await supabase.from("store_settings").select("*").single()).data, []);
+  const { data: s, loading } = useQuery(async () => (await supabase.rpc("admin_store_settings")).data as StoreSettingsRow | null, []);
   if (loading && !s) return <Loading />;
   if (!s) return null;
   const ps = (s.payment_settings ?? {}) as { cod_enabled?: boolean; manual_enabled?: boolean; instructions_en?: string; instructions_ne?: string };

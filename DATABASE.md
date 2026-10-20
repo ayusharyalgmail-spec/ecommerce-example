@@ -114,8 +114,10 @@ Single row (`id smallint primary key default 1 check (id = 1)`).
 - `low_stock_default integer NN default 5`
 - `max_pending_orders_per_phone integer NN default 3` (fraud heuristic input)
 - `deployed_version text` (written by the release script)
+- `brand jsonb NN default {}` (vendor brand: `{ "primary": "#RRGGBB", "accent": "#RRGGBB" }`; added in UX Phase 1, UX-D020)
+- `ui_v2 boolean NN default false` (rollout flag for the Bazaar Glass UI; removed after one stable release)
 - `updated_at`, `updated_by uuid FK auth.users on delete set null`
-- Auth: public read of a safe column view only; write requires `settings.manage`.
+- Auth: **column-level grants**. `anon` and `authenticated` may select only: `id, store_name, slug, logo_path, favicon_path, theme, brand, ui_v2, contact_phone, whatsapp_number, contact_email, default_locale, supported_locales, currency, payment_settings, policies, free_delivery_threshold_paisa, updated_at`. `authenticated` may additionally select `business_info` (PAN/VAT print on invoices). Operational fields (`unconfirmed_expiry_hours`, `low_stock_default`, `max_pending_orders_per_phone`, `deployed_version`, `updated_by`) are never readable by clients; staff with `settings.manage` get the full row from `public.admin_store_settings()`. Write requires `settings.manage` (RLS update policy). Applied 20 Oct 2026 (the original policy allowed `select *` to everyone).
 
 ### profiles
 - `id uuid PK FK auth.users(id) on delete cascade`

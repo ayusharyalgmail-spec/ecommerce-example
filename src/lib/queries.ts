@@ -24,9 +24,9 @@ export function useStoreSettings() {
     queryKey: ["settings", "public"],
     staleTime: TEN_MIN,
     queryFn: async () => {
-      const { data, error } = await supabase.from("store_settings").select("store_name").single();
+      const { data, error } = await supabase.from("store_settings").select("store_name,brand,ui_v2").single();
       if (error) throw new Error(error.message);
-      return data as { store_name: string };
+      return data as { store_name: string; brand: { primary?: string } | null; ui_v2: boolean };
     },
   });
 }

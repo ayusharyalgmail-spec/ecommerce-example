@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider, Link } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider, useT } from "@/lib/i18n";
 import { ThemeProvider } from "@/theme/ThemeProvider";
+import { BrandLoader } from "@/theme/BrandLoader";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import Layout from "@/components/Chrome";
@@ -107,6 +108,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
+        <BrandLoader />
         <I18nProvider>
           <AuthProvider>
             <CartProvider>
