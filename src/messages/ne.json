@@ -443,5 +443,21 @@
   "admin.report.chart": "बिक्री चार्ट, {n} अवधि; तलको तालिकामा सङ्ख्या छन्",
   "admin.report.period": "अवधि",
   "admin.report.by_product": "सामान अनुसार",
-  "admin.report.qty": "परिमाण"
+  "admin.report.qty": "परिमाण",
+  "admin.categories": "वर्गहरू",
+  "admin.cat.add": "वर्ग थप्नुहोस्",
+  "admin.cat.empty": "अहिलेसम्म वर्ग छैन",
+  "admin.cat.empty_hint": "माथि पहिलो वर्ग थप्नुहोस्।",
+  "admin.cat.products": "{n} सामान",
+  "admin.cat.delete": "वर्ग मेट्नुहोस्",
+  "admin.cat.delete_body": "\"{name}\" मेट्ने? यो उल्टाउन मिल्दैन।",
+  "admin.cat.delete_used": "\"{name}\" मा {n} सामान छन्। ती वर्गविहीन हुनेछन्। मेट्ने?",
+  "admin.cat.deleted": "वर्ग मेटियो",
+  "admin.cat.in_use": "यो वर्ग अझै प्रयोगमा छ",
+  "admin.staff_view": "तपाईं स्टाफको रूपमा साइन इन हुनुहुन्छ। किनमेलका बटन लुकाइएका छन्।",
+  "admin.edit_product": "यो सामान सम्पादन गर्नुहोस्",
+  "alerts.new_order": "{n} नयाँ अर्डर पर्खिरहेको छ",
+  "alerts.view": "हेर्नुहोस्",
+  "alerts.enable": "खोल्नुहोस्",
+  "alerts.enable_hint": "नयाँ अर्डर आउँदा यो उपकरणमा सूचना पाउनुहोस्।"
 }

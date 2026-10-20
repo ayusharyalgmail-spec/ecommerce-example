@@ -9,12 +9,16 @@ type Env = {
   pref: string | null;
   saveData?: boolean;
   deviceMemory?: number;
+  cores?: number;
+  touch?: boolean;
 };
 
 export function chooseFx(env: Env): FxTier {
   if (env.pref === "full" || env.pref === "lite") return env.pref;
   if (env.saveData) return "lite";
   if (env.deviceMemory !== undefined && env.deviceMemory <= 2) return "lite";
+  // Touch phones and tablets with 4 GB or less, or 6 or fewer cores, drop frames with live backdrop blur: start them on Lite.
+  if (env.touch && ((env.deviceMemory !== undefined && env.deviceMemory <= 4) || (env.cores !== undefined && env.cores <= 6))) return "lite";
   return "full";
 }
 
@@ -29,7 +33,7 @@ export function readFxPref(): FxPref {
 
 export function detectFx(pref: FxPref = readFxPref()): FxTier {
   const n = navigator as Nav;
-  return chooseFx({ pref: pref === "auto" ? null : pref, saveData: n.connection?.saveData, deviceMemory: n.deviceMemory });
+  return chooseFx({ pref: pref === "auto" ? null : pref, saveData: n.connection?.saveData, deviceMemory: n.deviceMemory, cores: n.hardwareConcurrency, touch: window.matchMedia?.("(pointer: coarse)").matches });
 }
 
 export function applyFx(tier: FxTier) {

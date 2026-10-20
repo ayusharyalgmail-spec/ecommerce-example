@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { GlassPanel, House, Package, ShoppingBag, ShoppingCart, User, cn, type LucideIcon } from "@/ui";
+import { GlassPanel, House, LayoutDashboard, Package, ShoppingBag, ShoppingCart, User, cn, type LucideIcon } from "@/ui";
+import { usePendingOrders } from "@/admin/usePending";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { useT } from "@/lib/i18n";
@@ -30,7 +31,8 @@ type Item = { to: string; label: string; icon: LucideIcon; end?: boolean; badge?
 export function BottomNav() {
   const { t } = useT();
   const { count } = useCart();
-  const { user } = useAuth();
+  const { user, isStaff } = useAuth();
+  const pending = usePendingOrders().data ?? 0;
   const { pathname } = useLocation();
   const keyboard = useKeyboardOpen();
   if (pathname.startsWith("/checkout") || keyboard) return null;
@@ -38,8 +40,8 @@ export function BottomNav() {
   const items: Item[] = [
     { to: "/", label: t("nav.home"), icon: House, end: true },
     { to: "/shop", label: t("nav.shop"), icon: ShoppingBag },
-    { to: "/cart", label: t("nav.cart"), icon: ShoppingCart, badge: count },
-    { to: "/track", label: t("nav.orders"), icon: Package },
+    isStaff ? { to: "/admin", label: t("nav.admin"), icon: LayoutDashboard, badge: pending } : { to: "/cart", label: t("nav.cart"), icon: ShoppingCart, badge: count },
+    isStaff ? { to: "/admin/orders", label: t("admin.orders"), icon: Package } : { to: "/track", label: t("nav.orders"), icon: Package },
     { to: user ? "/account" : "/login", label: user ? t("nav.account") : t("nav.signin"), icon: User },
   ];
 

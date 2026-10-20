@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Badge, Button, ChevronLeft, ChevronRight, Dialog, EmptyState, GlassPanel, Heart, IconButton, ImageOff, MessageCircle, Minus, Plus, Rating, Share2, ShoppingCart, Skeleton, Truck, toast } from "@/ui";
+import { Badge, Button, buttonStyles, ChevronLeft, ChevronRight, Dialog, EmptyState, GlassPanel, Heart, IconButton, ImageOff, MessageCircle, Minus, Plus, Rating, Share2, ShoppingCart, Skeleton, Truck, toast } from "@/ui";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { useT, pick } from "@/lib/i18n";
@@ -119,7 +119,8 @@ function RatingSummary({ avg, count, dist }: { avg: number; count: number; dist:
 export default function ProductPageV2() {
   const { slug } = useParams();
   const { t, locale } = useT();
-  const { user } = useAuth();
+  const { user, perms } = useAuth();
+  const canManage = perms.has("products.manage");
   const { add } = useCart();
   const cats = useCategories().data;
   const [qty, setQty] = useState(1);
@@ -199,7 +200,16 @@ export default function ProductPageV2() {
           </p>
           <p className="m-0 flex items-center gap-2 text-sm"><Truck aria-hidden size={18} strokeWidth={1.75} />{t("trust.delivery")} · {t("trust.cod")}</p>
 
-          <div className="hidden space-y-3 md:block">
+          {canManage && (
+            <div className="space-y-2 rounded-lg border border-line bg-surface-2 p-3">
+              <p className="m-0 text-sm font-semibold">{t("admin.staff_view")}</p>
+              <div className="flex flex-wrap gap-2">
+                <Link to={`/admin/products/${p.id}`} className={buttonStyles({ variant: "primary" })}>{t("admin.edit_product")}</Link>
+                <Link to="/admin/orders" className={buttonStyles({ variant: "secondary" })}>{t("admin.orders")}</Link>
+              </div>
+            </div>
+          )}
+          <div className={`hidden space-y-3 ${canManage ? "" : "md:block"}`}>
             {!out && (
               <div className="flex items-center gap-2" role="group" aria-label={t("product.qty")}>
                 <IconButton variant="secondary" icon={Minus} label={t("pdp.less")} disabled={qty <= 1} onClick={() => setQty((n) => Math.max(1, n - 1))} />
@@ -251,13 +261,13 @@ export default function ProductPageV2() {
       )}
 
       {/* Sticky buy bar: compact only, floats above the bottom nav. Glass allowed (floats), ink text only. */}
-      <GlassPanel shape="dialog" className="fixed inset-x-3 z-30 flex items-center gap-3 p-2 pl-4 md:hidden" style={{ bottom: "calc(84px + var(--safe-bottom))" }}>
+      {!canManage && <GlassPanel shape="dialog" className="fixed inset-x-3 z-30 flex items-center gap-3 p-2 pl-4 md:hidden" style={{ bottom: "calc(84px + var(--safe-bottom))" }}>
         <div className="min-w-0 flex-1">
           <p className="m-0 text-lg font-bold text-ink">{formatNpr(price)}</p>
           {sale && <s className="text-sm text-ink">{formatNpr(p.price_paisa)}</s>}
         </div>
         <Button disabled={out} leadingIcon={ShoppingCart} onClick={addToCart}>{out ? t("product.out") : t("product.add")}</Button>
-      </GlassPanel>
+      </GlassPanel>}
     </main>
   );
 }

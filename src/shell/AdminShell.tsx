@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import {
   Button, ChartColumn, ClipboardList, Ellipsis, ExternalLink, GlassPanel, History, IconButton, LayoutDashboard, Package, Palette, Settings,
-  Sheet, Star, Ticket, Truck, Upload, Users, cn, type LucideIcon,
+  Sheet, Star, Tag, Ticket, Truck, Upload, Users, cn, type LucideIcon,
 } from "@/ui";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
@@ -22,6 +22,7 @@ function useAdminNav(): NavItem[] {
     { to: "/admin", label: t("admin.dashboard"), perm: "orders.view", icon: LayoutDashboard, end: true },
     { to: "/admin/orders", label: t("admin.orders"), perm: "orders.view", icon: ClipboardList },
     { to: "/admin/products", label: t("admin.products"), perm: "products.view", icon: Package },
+    { to: "/admin/categories", label: t("admin.categories"), perm: "products.manage", icon: Tag },
     { to: "/admin/reviews", label: t("admin.reviews"), perm: "reviews.moderate", icon: Star },
     { to: "/admin/coupons", label: t("admin.coupons"), perm: "coupons.manage", icon: Ticket },
     { to: "/admin/zones", label: t("admin.zones"), perm: "delivery.manage", icon: Truck },

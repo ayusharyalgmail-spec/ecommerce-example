@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Badge, Button, Heart, IconButton, ImageOff, Rating, ShoppingCart, Truck, toast } from "@/ui";
+import { Badge, Button, buttonStyles, Settings, Heart, IconButton, ImageOff, Rating, ShoppingCart, Truck, toast } from "@/ui";
 import { useCart } from "@/lib/cart";
 import { useT, pick, type Locale } from "@/lib/i18n";
 import { formatNpr } from "@/lib/money";
 import { toggleWishlist } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { useWishIds } from "./data";
 import { primaryImage, type CardProduct } from "@/components/Product";
 
@@ -12,6 +13,8 @@ import { primaryImage, type CardProduct } from "@/components/Product";
 export function ProductCardV2({ p, locale, priority = false }: { p: CardProduct; locale: Locale; priority?: boolean }) {
   const { t } = useT();
   const { add } = useCart();
+  const { perms } = useAuth();
+  const canManage = perms.has("products.manage");
   const nav = useNavigate();
   const loc = useLocation();
   const ids = useWishIds().data;
@@ -37,12 +40,12 @@ export function ProductCardV2({ p, locale, priority = false }: { p: CardProduct;
           ) : <span className="flex h-full items-center justify-center text-muted"><ImageOff aria-hidden size={40} strokeWidth={1.25} /></span>}
         </Link>
         {sale && <Badge tone="danger" icon={false} className="absolute left-2 top-2">{t("card.off", { n: pct })}</Badge>}
-        <span className="absolute right-1 top-1"><IconButton variant="glass" icon={Heart} pressed={wish}
+        {!canManage && <span className="absolute right-1 top-1"><IconButton variant="glass" icon={Heart} pressed={wish}
           label={wish ? t("card.unsave", { name }) : t("card.save", { name })}
           onClick={async () => {
             const r = await toggleWishlist(p.id);
             if (r === "login") nav(`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`); else setLocal(r);
-          }} /></span>
+          }} /></span>}
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-3">
         {p.review_count > 0 && <Rating value={avg} count={p.review_count} size={14} label={t("rating.label", { value: avg.toFixed(1), count: p.review_count })} />}
@@ -54,10 +57,14 @@ export function ProductCardV2({ p, locale, priority = false }: { p: CardProduct;
         {out ? <Badge tone="danger">{t("product.out")}</Badge>
           : available < p.low_stock_threshold ? <Badge tone="warning">{t("product.low", { n: available })}</Badge>
           : <Badge icon={Truck}>{t("card.ready")}</Badge>}
-        <Button className="mt-auto" size="md" block variant={out ? "secondary" : "primary"} disabled={out} leadingIcon={ShoppingCart}
-          onClick={() => { add(p.id, 1); toast.success(t("product.added_toast"), { action: { label: t("cart.view"), onClick: () => nav("/cart") } }); }}>
-          {out ? t("product.out") : t("product.add")}
-        </Button>
+        {canManage ? (
+          <Link to={`/admin/products/${p.id}`} className={`${buttonStyles({ variant: "secondary" })} mt-auto w-full`}><Settings aria-hidden size={20} strokeWidth={1.75} />{t("admin.edit")}</Link>
+        ) : (
+          <Button className="mt-auto" size="md" block variant={out ? "secondary" : "primary"} disabled={out} leadingIcon={ShoppingCart}
+            onClick={() => { add(p.id, 1); toast.success(t("product.added_toast"), { action: { label: t("cart.view"), onClick: () => nav("/cart") } }); }}>
+            {out ? t("product.out") : t("product.add")}
+          </Button>
+        )}
       </div>
     </li>
   );

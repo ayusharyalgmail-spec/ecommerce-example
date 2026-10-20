@@ -60,3 +60,6 @@ button, a, label, select, summary, [role="button"] { touch-action: manipulation;
   body { padding: 0; background: #fff; }
   body::before { display: none; }
 }
+
+/* Real phones: no grey tap flash, no double-tap-zoom delay on controls. */
+a, button, [role="button"], label, summary, select, input { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }

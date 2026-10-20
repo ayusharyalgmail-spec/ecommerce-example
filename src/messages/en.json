@@ -443,5 +443,21 @@
   "admin.report.chart": "Sales chart, {n} periods; the table below has the numbers",
   "admin.report.period": "Period",
   "admin.report.by_product": "By product",
-  "admin.report.qty": "Quantity"
+  "admin.report.qty": "Quantity",
+  "admin.categories": "Categories",
+  "admin.cat.add": "Add category",
+  "admin.cat.empty": "No categories yet",
+  "admin.cat.empty_hint": "Add your first category above.",
+  "admin.cat.products": "{n} products",
+  "admin.cat.delete": "Delete category",
+  "admin.cat.delete_body": "Delete \"{name}\"? This cannot be undone.",
+  "admin.cat.delete_used": "\"{name}\" has {n} products. They will become uncategorised. Delete it?",
+  "admin.cat.deleted": "Category deleted",
+  "admin.cat.in_use": "This category is still in use",
+  "admin.staff_view": "You are signed in as staff. Shopping buttons are hidden.",
+  "admin.edit_product": "Edit this product",
+  "alerts.new_order": "{n} new order(s) waiting",
+  "alerts.view": "View",
+  "alerts.enable": "Turn on",
+  "alerts.enable_hint": "Get an alert on this device when a new order arrives."
 }

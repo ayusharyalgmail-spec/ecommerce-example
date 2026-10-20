@@ -97,7 +97,7 @@ export default function ProductEdit() {
                 </li>
               ))}
             </ul>
-            <input ref={file} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={busy}
+            <input ref={file} type="file" accept="image/jpeg,image/png,image/webp" disabled={busy}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); if (file.current) file.current.value = ""; }} />
           </section>
           <section className="card space-y-3">

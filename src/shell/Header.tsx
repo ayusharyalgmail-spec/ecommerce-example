@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { Button, GlassPanel, IconLink, Input, Search, ShoppingCart, cn } from "@/ui";
+import { Button, GlassPanel, IconLink, Input, LayoutDashboard, Search, ShoppingCart, cn } from "@/ui";
+import { useAuth } from "@/lib/auth";
+import { usePendingOrders } from "@/admin/usePending";
 import { useCart } from "@/lib/cart";
 import { useT } from "@/lib/i18n";
 import { useStoreSettings } from "@/lib/queries";
@@ -32,6 +34,8 @@ export function Header() {
   const { t } = useT();
   const nav = useNavigate();
   const { count } = useCart();
+  const { isStaff } = useAuth();
+  const pending = usePendingOrders().data ?? 0;
   const { data: store } = useStoreSettings();
   const scrolledDown = useHideOnScroll();
   const [focusWithin, setFocusWithin] = useState(false);
@@ -60,7 +64,8 @@ export function Header() {
         <IconLink to="/shop?focus=search" icon={Search} label={t("shop.search")} className="lg:hidden" />
 
         <LanguageButton />
-        <IconLink to="/cart" icon={ShoppingCart} label={`${t("nav.cart")}${count ? ` (${count})` : ""}`} badge={count} viewTransition />
+        {isStaff && <IconLink to="/admin" icon={LayoutDashboard} label={t("nav.admin")} badge={pending} />}
+        {!isStaff && <IconLink to="/cart" icon={ShoppingCart} label={`${t("nav.cart")}${count ? ` (${count})` : ""}`} badge={count} viewTransition />}
         <span className="hidden size-12 md:block"><Suspense fallback={null}><AccountMenu /></Suspense></span>
       </div>
     </GlassPanel>

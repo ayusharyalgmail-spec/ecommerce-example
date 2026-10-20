@@ -59,6 +59,7 @@ const AdminImport = lazy(() => import("@/pages/admin/ImportExport"));
 const AdminStaff = lazy(() => import("@/pages/admin/Staff"));
 const AdminAudit = lazy(() => import("@/pages/admin/Audit"));
 const AdminStorefront = lazy(() => import("@/pages/admin/Storefront"));
+const AdminCategories = lazy(() => import("@/admin/Categories"));
 const AdminSettings = lazy(() => import("@/pages/admin/Settings"));
 
 /** ui_v2 flag (UX-D020): vendors on the flag get the Bazaar Glass shell, everyone else keeps the current one. */
@@ -106,6 +107,7 @@ const router = createBrowserRouter([
           { path: "reviews", element: lazyEl(<AdminReviews />) },
           { path: "coupons", element: lazyEl(<AdminCoupons />) },
           { path: "zones", element: lazyEl(<AdminZones />) },
+          { path: "categories", element: lazyEl(<AdminCategories />) },
           { path: "storefront", element: lazyEl(<AdminStorefront />) },
           { path: "reports", element: <Routed v1={<AdminReportsLegacy />} v2={<ReportsV2 />} /> },
           { path: "import", element: lazyEl(<AdminImport />) },
