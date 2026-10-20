@@ -19,7 +19,8 @@ const HomeLegacy = lazy(() => import("@/pages/Home"));
 const HomeV2 = lazy(() => import("@/catalog/HomeV2"));
 const ShopLegacy = lazy(() => import("@/pages/Shop"));
 const ShopV2 = lazy(() => import("@/catalog/ShopV2"));
-import ProductPage from "@/pages/ProductPage";
+const ProductLegacy = lazy(() => import("@/pages/ProductPage"));
+const ProductV2 = lazy(() => import("@/catalog/ProductPageV2"));
 import Cart from "@/pages/Cart";
 import Checkout from "@/pages/Checkout";
 import Track from "@/pages/Track";
@@ -72,7 +73,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Routed v1={<HomeLegacy />} v2={<HomeV2 />} /> },
       { path: "/shop", element: <Routed v1={<ShopLegacy />} v2={<ShopV2 />} /> },
-      { path: "/product/:slug", element: <ProductPage /> },
+      { path: "/product/:slug", element: <Routed v1={<ProductLegacy />} v2={<ProductV2 />} /> },
       { path: "/cart", element: <Cart /> },
       { path: "/checkout", element: <Checkout /> },
       { path: "/track", element: <Track /> },

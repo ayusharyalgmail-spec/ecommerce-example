@@ -140,9 +140,9 @@ export async function saveProduct(f: Record<string, string>, id?: string): Promi
   return error ? { error: error.message } : { id: data.id };
 }
 
-export async function addProductImage(productId: string, path: string) {
+export async function addProductImage(productId: string, path: string, meta?: { width: number; height: number; blur_color: string }) {
   const { data: existing } = await supabase.from("product_images").select("id").eq("product_id", productId);
-  const { error } = await supabase.from("product_images").insert({ product_id: productId, storage_path: path, is_primary: !existing?.length, sort_order: existing?.length ?? 0 });
+  const { error } = await supabase.from("product_images").insert({ product_id: productId, storage_path: path, is_primary: !existing?.length, sort_order: existing?.length ?? 0, ...meta });
   return error?.message ?? null;
 }
 

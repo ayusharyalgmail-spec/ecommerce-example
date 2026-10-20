@@ -137,6 +137,9 @@ Single row (`id smallint primary key default 1 check (id = 1)`).
 - Trigger `trg_banners_audit` and `trg_categories_audit` write insert/update/delete to `audit_logs` through `app_private.audit_row()` (SECURITY DEFINER, execute revoked from clients).
 - Storage: staff upload/delete policies on `store-assets` for `banners/*` (`settings.manage`) and `categories/*` (`products.manage`).
 
+### product_images additions (Phase 4)
+- `width int`, `height int` (1..10000), `blur_color text` (`#rrggbb` average colour used as the placeholder tile). Nullable; set at upload by the admin product editor.
+
 ### categories
 - `id PK`, `parent_id uuid FK categories(id) on delete restrict`, `slug text NN UQ`, `name_en text NN`, `name_ne text`, `image_path text`, `sort_order int NN default 0`, `is_active boolean NN default true`
 - CK: a category cannot be its own parent; depth limited to 2 by trigger.

@@ -332,5 +332,15 @@
   "admin.banner.image": "तस्बिर",
   "admin.banner.image_hint": "चौडा तस्बिर, करिब ३ अनुपात १। आफैँ सानो र रूपान्तरण हुन्छ।",
   "admin.category_images": "वर्गका तस्बिरहरू",
-  "admin.category_images.change": "तस्बिर बदल्नुहोस्"
+  "admin.category_images.change": "तस्बिर बदल्नुहोस्",
+  "pdp.gallery": "सामानका तस्बिरहरू",
+  "pdp.zoom": "तस्बिर ठूलो गर्नुहोस्",
+  "pdp.show_image": "तस्बिर {n} देखाउनुहोस्",
+  "pdp.distribution": "मूल्याङ्कनको विवरण",
+  "pdp.stars_n": "{n} तारा",
+  "pdp.breadcrumb": "बाटो",
+  "pdp.less": "घटाउनुहोस्",
+  "pdp.more": "बढाउनुहोस्",
+  "pdp.share": "सेयर गर्नुहोस्",
+  "pdp.ask": "WhatsApp मा सोध्नुहोस्"
 }

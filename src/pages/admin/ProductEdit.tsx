@@ -1,3 +1,4 @@
+import { toWebp, imageMeta } from "@/lib/image";
 import { useRef, useState } from "react";
 import { Star } from "@/ui";
 import { useNavigate, useParams } from "react-router-dom";
@@ -9,16 +10,6 @@ import { addProductImage, adjustStock, deleteProductImage, saveProduct } from "@
 import { ErrorBox, Loading, OkBox, useTitle } from "@/components/ui";
 
 type Img = { id: string; storage_path: string; is_primary: boolean; sort_order: number };
-
-/** Downscale to max 1600px and re-encode as WebP before upload (ARCHITECTURE.md §10). */
-async function toWebp(file: File): Promise<Blob> {
-  const bmp = await createImageBitmap(file);
-  const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
-  const c = document.createElement("canvas");
-  c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
-  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
-  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("encode"))), "image/webp", 0.85));
-}
 
 export default function ProductEdit() {
   const { id } = useParams();
@@ -49,9 +40,10 @@ export default function ProductEdit() {
     setBusy(true);
     try {
       const path = `products/${id}/${crypto.randomUUID()}.webp`;
-      const up = await supabase.storage.from("product-images").upload(path, await toWebp(f), { contentType: "image/webp" });
+      const blob = await toWebp(f);
+      const up = await supabase.storage.from("product-images").upload(path, blob, { contentType: "image/webp" });
       if (up.error) throw up.error;
-      const err = await addProductImage(id!, path);
+      const err = await addProductImage(id!, path, await imageMeta(blob));
       if (err) setMsg({ ok: false, text: err }); else reload();
     } catch (e) { setMsg({ ok: false, text: e instanceof Error ? e.message : t("err.UNKNOWN") }); }
     setBusy(false);

@@ -332,5 +332,15 @@
   "admin.banner.image": "Image",
   "admin.banner.image_hint": "Wide photo, about 3 to 1. It is resized and converted automatically.",
   "admin.category_images": "Category pictures",
-  "admin.category_images.change": "Change picture"
+  "admin.category_images.change": "Change picture",
+  "pdp.gallery": "Product photos",
+  "pdp.zoom": "Zoom photo",
+  "pdp.show_image": "Show photo {n}",
+  "pdp.distribution": "Rating breakdown",
+  "pdp.stars_n": "{n} stars",
+  "pdp.breadcrumb": "Breadcrumb",
+  "pdp.less": "Fewer",
+  "pdp.more": "More",
+  "pdp.share": "Share",
+  "pdp.ask": "Ask on WhatsApp"
 }
