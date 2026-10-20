@@ -595,3 +595,13 @@ Status of every entry below: **Proposed** (drafted in Phase 0, 20 Oct 2026, awai
 **Phase 0 finding:** `store_settings` is currently readable in full by anon (policy `using (true)`), which contradicts DATABASE.md ("safe column view only"). Before adding `brand` and `ui_v2`, replace direct table reads with a public view or RPC exposing only intended columns, and keep `business_info` PAN/VAT out of anon reads (the invoice reads it as the signed-in owner of the order).
 
 **Consequences:** Two style systems coexist for roughly 5 months; the class-hygiene lint rule (after Phase 2) limits drift.
+
+---
+
+## UX ADR amendments from Phase 1 (20 Oct 2026, still Proposed)
+
+- **UX-D015:** Overlay libraries are lazy chunks, confirmed by build: Sheet (Vaul) 9.0 kB, Toaster (Sonner) 9.7 kB, Tooltip 3.3 kB, Popover 2.1 kB, Dialog 0.7 kB gzip, none in the entry. `tailwind-merge` is **not** adopted. `motion` is **not** adopted for Phase 1: motion is CSS (transform and opacity); `motion/mini` (about 10 kB) stays the fallback if a spring is needed. This amends ux ARCHITECTURE.md section 4 (which lists `LazyMotion` `motion`, about 78 kB gzip measured).
+- **UX-D016:** TanStack Query is live behind the `useQuery` shim (+19.5 kB gzip in the entry). Shared keys exist for categories and store settings.
+- **UX-D017:** Glass alpha raised after the contrast review: light `.84`, dark `.72`; text on glass is ink only. `scripts/contrast.mjs` (74 checks) is the gate.
+- **UX-D020:** The rollout flag column and `BrandLoader` exist, but the token re-map itself is global (no per-vendor switch), because no production vendor is live yet. From Phase 2 on, new shell and page layouts are gated by `data-ui="v2"`.
+- **Budget gate:** `size-limit` is replaced by `scripts/check-budget.mjs`, because the bundler splits the initial JS across several chunks and the real budget is "everything index.html loads". Initial JS is **190.7 kB gzip of 200 kB (95%)**.

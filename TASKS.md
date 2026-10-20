@@ -71,6 +71,40 @@ Conventions: every task ends with typecheck + lint + build green and a short not
 | P1-34 | `design:accessibility-review` of primitives; fix findings | 0.5d | P1-27 | 0 critical/serious axe issues in Storybook |
 | P1-35 | Phase 1 exit: legacy pages render correctly with new tokens; release notes; `v0.2` | 0.5d | all | Exit criteria in PHASES.md ticked |
 
+
+### Phase 1 status (20 Oct 2026)
+
+done = verified here; **manual** = needs a person or a real device; partial = see note.
+
+| ID | Status | Note |
+|---|---|---|
+| P1-01 | done | git initialised, baseline commit, branch `ux/phase-1` |
+| P1-02, P1-03 | done | tokens + contrast amendments; `npm run contrast` = 74 checks, 0 failing |
+| P1-04, P1-05 | done | `baseline/breakpoints.md`; only `Chrome.tsx` needed a change |
+| P1-06, P1-07 | done | legacy `.btn/.card/.badge/.alert/.field` and inputs re-mapped to tokens (48 px) |
+| P1-08, P1-09 | done | Mukta self-hosted, Google Fonts removed, no Devanagari letter-spacing; Devanagari files are ~100 kB each (not subsetted yet) |
+| P1-10, P1-11 | done | glass recipe with 4 fallbacks, mesh, Lite tier; glass alpha .84 light / .72 dark |
+| P1-12 | done | ThemeProvider + pre-paint script |
+| P1-13 | done | brand engine, 25 unit tests incl. matrix of 7 colours (very light, very dark, mid-tone) |
+| P1-14 | done | fx tiers with tests |
+| P1-15 | done | CVA + clsx; **tailwind-merge not adopted** (11 kB, not needed without `!` overrides) |
+| P1-16 | done | all 18 emoji + heart/star glyphs replaced by Lucide / SVG Rating |
+| P1-17 to P1-20 | done | Button, IconButton, Field/Input/Textarea/Select (native), Checkbox/Radio/ChoiceCard/Switch, Chip, Badge, Card, Skeleton, EmptyState, GlassPanel. Radix Select for expanded screens deferred to Phase 3 (filter sidebar) |
+| P1-21 | partial | Nepali dictionary lazy (-3.7 kB), overlays lazy, motion = CSS (no `motion` package). **Supabase Realtime (~25 kB) still in the entry**; moving it out is not possible with supabase-js 2.118 (hard-wired) and is deferred |
+| P1-22 | done | TanStack Query behind the shim; categories and settings shared |
+| P1-23 | done | Sheet (Vaul), Dialog (Radix) as lazy chunks, not in the entry |
+| P1-24 | partial | Popover, Tooltip built and lazy; **hover/focus behaviour not verified**, not in axe tests |
+| P1-25 | done | Sonner toast with Undo, glass, max 2 visible; used for add-to-cart and cart removal |
+| P1-26 | partial | `useSheetHistory` verified in the browser pane (Back closes the sheet, stays on page). **Manual: test on a real Android phone** |
+| P1-27 | done | Storybook 10, 4 story files, toolbars for language/theme/effects/brand |
+| P1-28 | partial | brand matrix is in unit tests and the Storybook toolbar; no per-colour contrast report page |
+| P1-29 | done | ESLint (class hygiene, layering, icon imports), i18n parity, budget gate. **size-limit replaced by `scripts/check-budget.mjs`** (measures initial JS from index.html) |
+| P1-30, P1-31 | done | store_settings column grants + `admin_store_settings()`; `brand` + `ui_v2` columns; verified as anon/authenticated/non-staff |
+| P1-32 | partial | `.claude/skills/bazaar-glass-ui/SKILL.md` written by hand with 5 test prompts; `skill-creator` evaluation loop not run |
+| P1-33 | **manual** | on-device glass profiling needs a real low-end Android phone |
+| P1-34 | partial | axe-core over all primitives (jsdom, contrast rule off) + contrast script; `design:accessibility-review` skill unavailable; TalkBack/NVDA passes are **manual** |
+| P1-35 | partial | legacy pages render and pass `npm run check`; release tag `v0.2.0`; full exit criteria listed in the Phase 1 report |
+
 Estimated total: **16.75 days** in 35 tasks (week 1: 4.5, week 2: 5.25, week 3: 7.0) against 15 working days in the plan, so Phase 1 is about 1.75 days over. Candidates to slip into the start of Phase 2 (not on its critical path): P1-24, P1-28, P1-33. Phase 1 as written is a 3.5 week phase for one developer.
 
 ## Phase 2 to 9

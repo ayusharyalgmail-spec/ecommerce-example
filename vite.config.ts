@@ -18,6 +18,9 @@ export default defineConfig({
         ]
       : []),
   ],
+  // Lazily imported overlays are pre-bundled up front. Without this the dev server discovers them mid-session,
+  // re-optimizes, and can leave two copies of React loaded ("Invalid hook call").
+  optimizeDeps: { include: ["@radix-ui/react-dialog", "@radix-ui/react-popover", "@radix-ui/react-tooltip", "vaul", "sonner"] },
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
   // host: true exposes the dev server on your LAN so phones can open http://<your-ip>:3001
   server: { port: 3001, host: true },
