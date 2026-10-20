@@ -40,8 +40,10 @@ import Invoice from "@/pages/Invoice";
 const UiGallery = import.meta.env.DEV ? lazy(() => import("@/pages/UiGallery")) : null;
 const DevShells = import.meta.env.DEV ? lazy(() => import("@/pages/DevShells")) : null;
 const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
-const AdminHome = lazy(() => import("@/pages/admin/AdminHome"));
-const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
+const AdminHomeLegacy = lazy(() => import("@/pages/admin/AdminHome"));
+const DashboardV2 = lazy(() => import("@/admin/DashboardV2"));
+const AdminOrdersV2 = lazy(() => import("@/admin/OrdersV2"));
+const AdminOrdersLegacy = lazy(() => import("@/pages/admin/Orders"));
 const AdminOrder = lazy(() => import("@/pages/admin/OrderDetail"));
 const AdminProducts = lazy(() => import("@/pages/admin/Products"));
 const AdminProductEdit = lazy(() => import("@/pages/admin/ProductEdit"));
@@ -91,8 +93,8 @@ const router = createBrowserRouter([
         path: "/admin",
         element: <RequireStaff>{lazyEl(<AdminLayout />)}</RequireStaff>,
         children: [
-          { index: true, element: lazyEl(<AdminHome />) },
-          { path: "orders", element: lazyEl(<AdminOrders />) },
+          { index: true, element: <Routed v1={<AdminHomeLegacy />} v2={<DashboardV2 />} /> },
+          { path: "orders", element: <Routed v1={<AdminOrdersLegacy />} v2={<AdminOrdersV2 />} /> },
           { path: "orders/:id", element: lazyEl(<AdminOrder />) },
           { path: "products", element: lazyEl(<AdminProducts />) },
           { path: "products/new", element: lazyEl(<AdminProductEdit />) },

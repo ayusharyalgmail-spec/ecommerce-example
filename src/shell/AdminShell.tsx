@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useStoreSettings } from "@/lib/queries";
 import { AppearancePanel } from "./AppearancePanel";
+import { CommandPalette } from "@/admin/CommandPalette";
 
 type NavItem = { to: string; label: string; perm: string; icon: LucideIcon; end?: boolean };
 
@@ -116,6 +117,8 @@ export default function AdminShell() {
           </li>
         </ul>
       </GlassPanel>
+
+      <CommandPalette commands={items.map((i) => ({ id: i.to, label: i.label, icon: i.icon, to: i.to }))} />
 
       <Sheet open={more} onOpenChange={setMore} title={t("admin.more")}>
         <ul className="m-0 grid list-none gap-1 p-0">
