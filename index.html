@@ -3,13 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#7c3aed" />
+    <meta name="theme-color" content="#F7F6FB" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0E1030" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="Shop local, delivered across Nepal." />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Self-hosted Mukta: preload the two weights used above the fold -->
+    <link rel="preload" href="/fonts/mukta-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/mukta-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // Runs before first paint: apply the saved theme and effects tier (no flash), and preload the
+      // Devanagari face when the saved language is Nepali (those files are large, so only then).
+      (function () {
+        try {
+          var d = document.documentElement;
+          var theme = localStorage.getItem("theme");
+          if (theme === "light" || theme === "dark") d.setAttribute("data-theme", theme);
+          var fx = localStorage.getItem("fx");
+          if (fx === "lite" || fx === "full") d.setAttribute("data-fx", fx);
+          if (localStorage.getItem("lang") === "ne") {
+            d.lang = "ne";
+            var l = document.createElement("link");
+            l.rel = "preload"; l.as = "font"; l.type = "font/woff2"; l.crossOrigin = "anonymous";
+            l.href = "/fonts/mukta-devanagari-400-normal.woff2";
+            document.head.appendChild(l);
+          }
+        } catch (e) { /* storage blocked: system theme, Full effects */ }
+      })();
+    </script>
     <title>Online Store</title>
   </head>
   <body>

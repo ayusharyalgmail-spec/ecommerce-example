@@ -1,63 +1,6 @@
 @import "tailwindcss";
-
-:root {
-  --color-bg-primary:#fff; --color-bg-secondary:#f9fafb; --color-bg-tertiary:#f3f4f6;
-  --color-text-primary:#1f2937; --color-text-secondary:#6b7280; --color-text-inverse:#fff;
-  --color-border:#d1d5db; --color-success:#047857; --color-info:#2563eb; --color-warning:#b45309; --color-error:#dc2626;
-  --color-surface-success:#f0fdf4; --color-surface-info:#eff6ff; --color-surface-warning:#fffbeb; --color-surface-error:#fef2f2;
-  --color-accent:#7c3aed; --color-accent-light:#f5f3ff;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg-primary:#1f2937; --color-bg-secondary:#111827; --color-bg-tertiary:#0f172a;
-    --color-text-primary:#f3f4f6; --color-text-secondary:#d1d5db; --color-text-inverse:#1f2937;
-    --color-border:#374151; --color-success:#34d399; --color-info:#60a5fa; --color-warning:#fbbf24; --color-error:#f87171;
-    --color-surface-success:#064e3b; --color-surface-info:#0c2d5c; --color-surface-warning:#78350f; --color-surface-error:#7f1d1d;
-    --color-accent:#a78bfa; --color-accent-light:#3730a3;
-  }
-}
-@theme inline {
-  --color-bg: var(--color-bg-primary);
-  --color-bg2: var(--color-bg-secondary);
-  --color-bg3: var(--color-bg-tertiary);
-  --color-fg: var(--color-text-primary);
-  --color-muted: var(--color-text-secondary);
-  --color-line: var(--color-border);
-  --color-ok: var(--color-success);
-  --color-warn: var(--color-warning);
-  --color-err: var(--color-error);
-}
-html { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.5; }
-html[lang="ne"], [lang="ne"] { font-family: "Noto Sans Devanagari", -apple-system, "Segoe UI", sans-serif; line-height: 1.8; letter-spacing: .3px; }
-body { margin: 0; background: var(--color-bg-primary); color: var(--color-text-primary); padding-bottom: 72px; }
-@media (min-width: 1024px) { body { padding-bottom: 0; } }
-input, select, textarea { border: 1px solid var(--color-border); border-radius: .5rem; padding: .625rem .875rem; background: var(--color-bg-primary); color: inherit; width: 100%; font-size: 16px; min-height: 44px; }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-light); }
-input[type="radio"], input[type="checkbox"] { width: 1.25rem; height: 1.25rem; accent-color: var(--color-accent); padding: 0; min-height: 0; }
-.btn { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.625rem 1rem; border-radius:.5rem; font-weight:500; cursor:pointer; transition: opacity .2s, background .2s; border:1px solid transparent; min-height: 44px; text-decoration: none; }
-.btn:disabled { opacity:.6; cursor:not-allowed; }
-.btn-primary { background: var(--color-accent); color: var(--color-text-inverse); }
-.btn-primary:hover:not(:disabled) { opacity:.9; }
-.btn-secondary { border-color: var(--color-border); background: transparent; color: inherit; }
-.btn-secondary:hover { background: var(--color-bg-secondary); }
-.btn-danger { background: var(--color-error); color:#fff; }
-.card { background: var(--color-bg-primary); border:1px solid var(--color-border); border-radius:.75rem; padding:1rem; box-shadow:0 1px 3px rgba(0,0,0,.06); }
-.badge { display:inline-block; padding:.125rem .625rem; border-radius:9999px; font-size:.75rem; font-weight:600; background: var(--color-bg-tertiary); }
-.badge-ok { background:var(--color-surface-success); color:var(--color-success); }
-.badge-warn { background:var(--color-surface-warning); color:var(--color-warning); }
-.badge-err { background:var(--color-surface-error); color:var(--color-error); }
-.badge-info { background:var(--color-surface-info); color:var(--color-info); }
-.alert { display:block; border-radius:.5rem; padding:.5rem .75rem; font-size:.875rem; font-weight:500; }
-label.field { display:block; font-size:.875rem; font-weight:500; }
-label.field > span { display:block; margin-bottom:.25rem; }
-.muted { color: var(--color-text-secondary); }
-a { color: inherit; }
-.container-page { max-width: 64rem; margin: 0 auto; padding: 1rem; }
-
-/* Touch-friendly controls (Android): no double-tap delay, no tap flash. */
-button, a, label, select, summary, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-
-@media print {
-  header, nav[aria-label="Primary"], nav[aria-label="Admin"], .no-print { display: none !important; }
-  body { padding: 0 !important; background: #fff !important; }
-}
+@import "./styles/fonts.css";
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/glass.css";
+@import "./styles/legacy.css";

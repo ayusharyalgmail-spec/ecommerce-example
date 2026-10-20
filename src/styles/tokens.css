@@ -1,0 +1,155 @@
+/* Bazaar Glass design tokens (docs/ux-overhaul/DESIGN.md section 2.4).
+   Phase 0 contrast amendments applied: --line-strong, --brand-strong, --glacier-text, tint opacity 8%,
+   see docs/ux-overhaul/baseline/contrast.md. All values re-verified by scripts/contrast.mjs. */
+
+@theme {
+  /* Breakpoints follow Material window size classes: compact / medium / expanded */
+  --breakpoint-sm: 600px;   /* large phones, foldables */
+  --breakpoint-md: 840px;   /* tablets, small Windows windows: sidebars appear */
+  --breakpoint-lg: 1200px;  /* laptops */
+  --breakpoint-xl: 1600px;  /* desktops */
+
+  --font-sans: "Mukta", "Segoe UI Variable Text", "Segoe UI", Roboto, system-ui, sans-serif;
+
+  --radius-xs: .375rem;   /* chips inside dense UI */
+  --radius-sm: .5rem;     /* inputs */
+  --radius-md: .75rem;    /* buttons */
+  --radius-lg: 1rem;      /* cards */
+  --radius-xl: 1.5rem;    /* sheets, hero */
+  --radius-pill: 999px;
+
+  --shadow-e1: var(--e1);
+  --shadow-e2: var(--e2);
+
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --duration-1: 120ms;
+  --duration-2: 200ms;
+  --duration-3: 320ms;
+}
+
+/* Colours are runtime variables (theme + brand change them), exposed to Tailwind with `inline`. */
+@theme inline {
+  --color-ink: var(--ink);
+  --color-page: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-muted: var(--text-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-tint: var(--brand-tint);
+  --color-on-brand: var(--on-brand);
+  --color-accent: var(--accent);
+  --color-glacier: var(--glacier);
+  --color-glacier-text: var(--glacier-text);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  /* Legacy utility names used by pre-overhaul pages (bg-bg, bg-bg2, bg-bg3, text-fg, text-ok ...).
+     Kept until each page migrates to src/ui; the class-hygiene lint stops new uses. */
+  --color-bg: var(--surface);
+  --color-bg2: var(--surface);
+  --color-bg3: var(--surface-2);
+  --color-fg: var(--ink);
+  --color-ok: var(--success);
+  --color-warn: var(--warning);
+  --color-err: var(--danger);
+}
+
+:root {
+  color-scheme: light;
+  --ink: #15173A; --bg: #F7F6FB; --surface: #FFFFFF; --surface-2: #EEEDF6;
+  --text-muted: #555A7D; --line: #DAD9E8; --line-strong: #8D8DA4;
+  --brand: #F5A524; --brand-strong: #BE822A; --on-brand: #15173A; --on-danger: #FFFFFF;
+  --accent: #D1244F; --glacier: #2FB5A3; --glacier-text: #278281;
+  --success: #0E7C4A; --warning: #B45309; --danger: #C21F3A; --info: #2457D6;
+
+  --brand-hover: color-mix(in oklab, var(--brand) 92%, var(--ink));
+  --brand-press: color-mix(in oklab, var(--brand) 84%, var(--ink));
+  --brand-tint: color-mix(in oklab, var(--brand) 14%, var(--surface));
+  /* Status tints are 8% (Phase 0: 12% failed 4.5:1 for success, warning and accent text). */
+  --success-tint: color-mix(in oklab, var(--success) 8%, var(--surface));
+  --warning-tint: color-mix(in oklab, var(--warning) 8%, var(--surface));
+  --danger-tint: color-mix(in oklab, var(--danger) 8%, var(--surface));
+  --info-tint: color-mix(in oklab, var(--info) 8%, var(--surface));
+  --accent-tint: color-mix(in oklab, var(--accent) 8%, var(--surface));
+
+  /* Elevation (flat layer) */
+  --e1: 0 1px 2px rgba(21, 23, 58, .06);
+  --e2: 0 4px 12px rgba(21, 23, 58, .08);
+
+  /* Glass (floating layer). Alphas follow the Phase 0 contrast result (see glass.css). */
+  --glass-bg: rgba(255, 255, 255, .84);
+  --glass-bg-solid: rgba(255, 255, 255, .94);
+  --glass-border: rgba(255, 255, 255, .55);
+  --glass-highlight: rgba(255, 255, 255, .7);
+  --glass-shadow: 0 8px 32px rgba(21, 23, 58, .14);
+  --glass-blur: 18px;
+
+  /* Ambient mesh behind the shell */
+  --mesh-a: rgba(245, 165, 36, .12);
+  --mesh-b: rgba(209, 36, 79, .08);
+  --mesh-c: rgba(36, 40, 140, .10);
+
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Dark values live once, in a mixin-free way: the explicit attribute and the system preference share them. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #F2F3FF; --bg: #0E1030; --surface: #181B45; --surface-2: #222657;
+  --text-muted: #B4B8DC; --line: #2E3266; --line-strong: #64678E;
+  --brand-strong: #F5A524; --on-danger: #15173A;
+  --accent: #FF5C82; --glacier: #52D4C2; --glacier-text: #52D4C2;
+  --success: #34D399; --warning: #FBBF24; --danger: #F87171; --info: #7FA6FF;
+  --e1: 0 1px 2px rgba(0, 0, 0, .4); --e2: 0 4px 12px rgba(0, 0, 0, .45);
+  --glass-bg: rgba(24, 27, 69, .72);
+  --glass-bg-solid: rgba(24, 27, 69, .96);
+  --glass-border: rgba(255, 255, 255, .12);
+  --glass-highlight: rgba(255, 255, 255, .08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+  --mesh-a: rgba(245, 165, 36, .22);
+  --mesh-b: rgba(255, 92, 130, .16);
+  --mesh-c: rgba(80, 90, 255, .26);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --ink: #F2F3FF; --bg: #0E1030; --surface: #181B45; --surface-2: #222657;
+    --text-muted: #B4B8DC; --line: #2E3266; --line-strong: #64678E;
+    --brand-strong: #F5A524; --on-danger: #15173A;
+    --accent: #FF5C82; --glacier: #52D4C2; --glacier-text: #52D4C2;
+    --success: #34D399; --warning: #FBBF24; --danger: #F87171; --info: #7FA6FF;
+    --e1: 0 1px 2px rgba(0, 0, 0, .4); --e2: 0 4px 12px rgba(0, 0, 0, .45);
+    --glass-bg: rgba(24, 27, 69, .72);
+    --glass-bg-solid: rgba(24, 27, 69, .96);
+    --glass-border: rgba(255, 255, 255, .12);
+    --glass-highlight: rgba(255, 255, 255, .08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+    --mesh-a: rgba(245, 165, 36, .22);
+    --mesh-b: rgba(255, 92, 130, .16);
+    --mesh-c: rgba(80, 90, 255, .26);
+  }
+}
+
+/* Devanagari ships weights 400, 600, 700 only; map the others so the browser never fakes bold. */
+:lang(ne) {
+  --font-weight-medium: 600;
+  --font-weight-extrabold: 700;
+  --font-weight-black: 700;
+}
+
+/* Legacy variable names still referenced by a few pages; aliases only, no new uses. */
+:root {
+  --color-border: var(--line);
+  --color-accent: var(--brand-strong);
+  --color-error: var(--danger);
+  --color-success: var(--success);
+  --color-surface-success: var(--success-tint);
+  --color-surface-error: var(--danger-tint);
+  --color-surface-warning: var(--warning-tint);
+  --color-surface-info: var(--info-tint);
+}

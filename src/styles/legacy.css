@@ -1,0 +1,63 @@
+/* Legacy component classes, re-mapped to the Bazaar Glass tokens (strangler step 1).
+   They keep the old names so pages need no edits. Do NOT add new uses: new code uses src/ui.
+   Removed in Phase 8 once the last page has migrated (docs/ux-overhaul/ARCHITECTURE.md section 11). */
+
+input, select, textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: .625rem .875rem;
+  font: inherit;
+  font-size: 16px; /* never below 16 px: stops iOS zoom and keeps Nepali legible */
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+textarea { min-height: 6rem; }
+input[type="radio"], input[type="checkbox"] { width: 1.25rem; height: 1.25rem; min-height: 0; padding: 0; accent-color: var(--brand-strong); }
+input::placeholder, textarea::placeholder { color: var(--text-muted); }
+input:disabled, select:disabled, textarea:disabled { background: var(--surface-2); color: var(--text-muted); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 48px; padding: .625rem 1rem;
+  font: inherit; font-weight: 600; text-decoration: none; cursor: pointer;
+  border: 1px solid transparent; border-radius: var(--radius-md);
+  transition: transform var(--duration-1) var(--ease-out), background-color var(--duration-1) var(--ease-out);
+}
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+.btn-primary { background: var(--brand); color: var(--on-brand); }
+@media (hover: hover) and (pointer: fine) { .btn-primary:hover:not(:disabled) { background: var(--brand-hover); } }
+.btn-primary:active:not(:disabled) { background: var(--brand-press); }
+.btn-secondary { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+@media (hover: hover) and (pointer: fine) { .btn-secondary:hover:not(:disabled) { background: var(--surface-2); } }
+.btn-danger { background: var(--danger); color: var(--on-danger); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+}
+
+.badge {
+  display: inline-block; padding: .125rem .625rem; border-radius: var(--radius-pill);
+  font-size: .75rem; font-weight: 600; line-height: 1.4; background: var(--surface-2); color: var(--ink);
+}
+.badge-ok { background: var(--success-tint); color: var(--success); }
+.badge-warn { background: var(--warning-tint); color: var(--warning); }
+.badge-err { background: var(--danger-tint); color: var(--danger); }
+.badge-info { background: var(--info-tint); color: var(--info); }
+
+.alert { display: block; border-radius: var(--radius-sm); padding: .5rem .75rem; font-size: .875rem; font-weight: 600; }
+
+label.field { display: block; font-size: .875rem; font-weight: 600; }
+label.field > span { display: block; margin-bottom: .25rem; }
+
+.muted { color: var(--text-muted); }
+
+/* Page gutters 16 / 24 / 32 px; storefront content max 1200 px */
+.container-page { max-width: 75rem; margin: 0 auto; padding: 1rem; }
+@media (min-width: 600px) { .container-page { padding: 1.5rem; } }
+@media (min-width: 840px) { .container-page { padding: 1.5rem 2rem; } }
