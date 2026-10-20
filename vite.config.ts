@@ -21,6 +21,6 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
   // host: true exposes the dev server on your LAN so phones can open http://<your-ip>:3001
   server: { port: 3001, host: true },
-  test: { environment: "jsdom", include: ["src/**/*.test.{ts,tsx}"] },
+  test: { environment: "jsdom", include: ["src/**/*.test.{ts,tsx}"], setupFiles: ["./src/test-setup.ts"] },
   preview: { port: 3001, host: true },
 });

@@ -20,7 +20,7 @@ const classHygiene = [
 ];
 
 export default tseslint.config(
-  { ignores: ["dist", "node_modules", "docs", "files (9)", "server", "scripts", "public"] },
+  { ignores: ["dist", "storybook-static", "node_modules", "docs", "files (9)", "server", "scripts", "public"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -45,3 +45,5 @@ next-env.d.ts
 
 # user scratch copies of the planning docs
 /files (9)/
+
+/storybook-static
