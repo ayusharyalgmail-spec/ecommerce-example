@@ -365,5 +365,18 @@
   "checkout.manual_desc": "Pay by bank transfer, eSewa or Khalti, then upload proof",
   "checkout.coupon_applied": "Coupon {code} applied",
   "checkout.new_total": "The new total is {total}.",
-  "checkout.confirm_new": "Confirm new total"
+  "checkout.confirm_new": "Confirm new total",
+  "track.proof.step1": "Pay using the vendor's instructions above.",
+  "track.proof.step2": "Take a clear photo or screenshot of the receipt.",
+  "track.proof.step3": "Upload it here. The vendor verifies it manually.",
+  "track.proof.photo": "Receipt photo",
+  "track.next1": "The vendor will call you to confirm.",
+  "track.next2": "You will see progress on this page.",
+  "track.next3": "Pay when it arrives, or upload proof if you chose manual payment.",
+  "track.wa": "Hello, about my order",
+  "track.ask_vendor": "Ask the vendor",
+  "install.cta": "Install the app",
+  "install.later": "Not now",
+  "account.buy_again": "Buy again",
+  "account.buy_again_done": "Items added to your cart"
 }

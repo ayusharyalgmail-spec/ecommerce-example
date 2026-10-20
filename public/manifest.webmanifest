@@ -5,5 +5,61 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#7c3aed",
-  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "/",
+  "lang": "en",
+  "scope": "/",
+  "description": "Shop online with delivery across Nepal.",
+  "orientation": "portrait",
+  "categories": [
+    "shopping"
+  ],
+  "shortcuts": [
+    {
+      "name": "Shop",
+      "url": "/shop",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Track an order",
+      "url": "/track",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "url": "/cart",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
 }
