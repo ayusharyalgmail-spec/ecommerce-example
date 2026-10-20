@@ -27,7 +27,7 @@ export default function Settings() {
         const f: Record<string, string | boolean> = Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
         f.cod_enabled = fd.get("cod_enabled") === "on"; f.manual_enabled = fd.get("manual_enabled") === "on";
         const err = await saveSettings(f);
-        setMsg(err ? { ok: false, text: err } : { ok: true, text: `✓ ${t("admin.save")}` });
+        setMsg(err ? { ok: false, text: err } : { ok: true, text: t("common.saved") });
       }}>
         <label className="field"><span>{t("admin.store_name")}</span><input name="store_name" required defaultValue={s.store_name} /></label>
         <label className="field"><span>{t("admin.phone")}</span><input name="contact_phone" defaultValue={s.contact_phone ?? ""} /></label>

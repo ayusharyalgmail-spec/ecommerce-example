@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { Rating } from "@/ui";
 import { useT } from "@/lib/i18n";
 import { moderateReview } from "@/lib/api";
 import { useQuery } from "@/lib/useQuery";
@@ -17,7 +18,7 @@ export default function Reviews() {
         <ul className="m-0 list-none space-y-3 p-0">
           {data.map((r) => (
             <li key={r.id} className="card space-y-2">
-              <p className="m-0 font-medium">{(r.products as unknown as { name_en: string } | null)?.name_en} · {"★".repeat(r.rating)}</p>
+              <p className="m-0 font-medium">{(r.products as unknown as { name_en: string } | null)?.name_en} · <Rating value={r.rating} label={t("rating.stars", { value: r.rating })} /></p>
               <p className="m-0">{r.title} {r.body}</p>
               <p className="muted m-0 text-xs">{r.author_name}</p>
               <div className="flex gap-2">

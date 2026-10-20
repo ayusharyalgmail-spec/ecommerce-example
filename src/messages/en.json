@@ -221,5 +221,9 @@
  "admin.legal": "Legal name",
  "admin.address": "Address",
  "admin.returns_en": "Returns policy (English)",
- "admin.returns_ne": "Returns policy (Nepali)"
+ "admin.returns_ne": "Returns policy (Nepali)",
+ "rating.label": "{value} out of 5, {count} reviews",
+ "rating.stars": "{value} out of 5 stars",
+ "common.saved": "Saved",
+ "admin.primary_image": "Primary image"
 }

@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
+import { TriangleAlert } from "@/ui";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
 import { formatNpr } from "@/lib/money";
@@ -40,7 +41,7 @@ export default function AdminOrders() {
                   <p className="muted m-0 text-sm">{o.customer_name} · {o.customer_phone} · {new Date(o.placed_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {o.risk_flags.length > 0 && <span className="badge badge-warn">⚠ {o.risk_flags.length}</span>}
+                  {o.risk_flags.length > 0 && <span className="badge badge-warn inline-flex items-center gap-1" title={t("admin.risk")}><TriangleAlert aria-hidden size={14} /><span className="sr-only-text">{t("admin.risk")}</span>{o.risk_flags.length}</span>}
                   <span className="badge badge-info">{t(`status.${o.status}`)}</span>
                 </div>
               </Link>

@@ -1,13 +1,12 @@
 import { Link, NavLink, Outlet, ScrollRestoration } from "react-router-dom";
+import { House, ShoppingBag, ShoppingCart, Package, User } from "@/ui";
 import { useCart } from "@/lib/cart";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
-import { useQuery } from "@/lib/useQuery";
+import { useStoreSettings } from "@/lib/queries";
 
 export function useStoreName() {
-  const { data } = useQuery(async () => (await supabase.from("store_settings").select("store_name").single()).data?.store_name as string | undefined, []);
-  return data ?? "Store";
+  return useStoreSettings().data?.store_name ?? "Store";
 }
 
 function Header() {
@@ -45,11 +44,11 @@ function BottomNav() {
   const { count } = useCart();
   const { user } = useAuth();
   const items = [
-    { to: "/", label: t("nav.home"), icon: "🏠", end: true },
-    { to: "/shop", label: t("nav.shop"), icon: "🛍️" },
-    { to: "/cart", label: t("nav.cart"), icon: "🛒", badge: count },
-    { to: "/track", label: t("nav.orders"), icon: "📦" },
-    { to: user ? "/account" : "/login", label: user ? t("nav.account") : t("nav.signin"), icon: "👤" },
+    { to: "/", label: t("nav.home"), icon: House, end: true },
+    { to: "/shop", label: t("nav.shop"), icon: ShoppingBag },
+    { to: "/cart", label: t("nav.cart"), icon: ShoppingCart, badge: count },
+    { to: "/track", label: t("nav.orders"), icon: Package },
+    { to: user ? "/account" : "/login", label: user ? t("nav.account") : t("nav.signin"), icon: User },
   ];
   return (
     <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
@@ -58,7 +57,7 @@ function BottomNav() {
           <li key={i.to}>
             <NavLink to={i.to} end={i.end} className="relative flex h-full flex-col items-center justify-center text-xs no-underline"
               style={({ isActive }) => ({ color: isActive ? "var(--color-accent)" : undefined })}>
-              <span aria-hidden>{i.icon}</span>
+              <i.icon aria-hidden size={24} strokeWidth={1.75} />
               {i.label}
               {!!i.badge && <span className="badge badge-info absolute right-4 top-1">{i.badge}</span>}
             </NavLink>

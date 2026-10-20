@@ -40,6 +40,7 @@ for (const [mode, T] of [["light", L], ["dark", D]]) {
   }
   check(mode, "on-brand on brand (primary button)", color(T, "on-brand"), color(T, "brand"), 4.5);
   check(mode, "on-danger on danger (danger button)", color(T, "on-danger"), color(T, "danger"), 4.5);
+  check(mode, "on-accent on accent (badge)", color(T, "on-accent"), color(T, "accent"), 4.5);
   check(mode, "brand-strong as UI on surface", color(T, "brand-strong"), S, 3);
   check(mode, "brand-strong as UI on bg", color(T, "brand-strong"), B, 3);
   check(mode, "line-strong (input border) on surface", color(T, "line-strong"), S, 3);

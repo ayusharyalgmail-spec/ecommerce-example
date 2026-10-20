@@ -1,0 +1,13 @@
+/* Styles for src/ui primitives that need real CSS (custom variants, keyframes). */
+@custom-variant hover-fine (@media (hover: hover) and (pointer: fine));
+
+.skeleton { position: relative; overflow: hidden; background: var(--surface-2); }
+/* One slow shimmer, Full tier only, never under reduced motion (DESIGN.md section 7). */
+@media (prefers-reduced-motion: no-preference) {
+  [data-fx="full"] .skeleton::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 30%, color-mix(in oklab, var(--surface) 55%, transparent) 50%, transparent 70%);
+    transform: translateX(-100%); animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+@keyframes skeleton-shimmer { to { transform: translateX(100%); } }

@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { visualizer } from "rollup-plugin-visualizer";
@@ -21,5 +21,6 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
   // host: true exposes the dev server on your LAN so phones can open http://<your-ip>:3001
   server: { port: 3001, host: true },
+  test: { environment: "jsdom", include: ["src/**/*.test.{ts,tsx}"] },
   preview: { port: 3001, host: true },
 });

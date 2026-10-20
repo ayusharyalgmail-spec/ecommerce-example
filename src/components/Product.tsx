@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check, Heart, ImageOff, Rating } from "@/ui";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/lib/cart";
 import { useT, pick, type Locale } from "@/lib/i18n";
@@ -20,7 +21,7 @@ export function AddToCart({ productId, available, withQty = false }: { productId
       )}
       <button className="btn btn-primary flex-1" disabled={out}
         onClick={() => { add(productId, qty); setDone(true); setTimeout(() => setDone(false), 1500); }}>
-        {out ? t("product.out") : done ? `✓ ${t("product.added")}` : t("product.add")}
+        {out ? t("product.out") : done ? <><Check aria-hidden size={20} strokeWidth={2} /> {t("product.added")}</> : t("product.add")}
       </button>
     </div>
   );
@@ -40,7 +41,7 @@ export function WishlistButton({ productId, initial }: { productId: string; init
         setBusy(false);
         if (r === "login") nav(`/login?next=${encodeURIComponent(loc.pathname)}`); else setSaved(r);
       }}>
-      {saved ? `♥ ${t("wish.saved")}` : `♡ ${t("wish.add")}`}
+      <Heart aria-hidden size={20} strokeWidth={1.75} fill={saved ? "currentColor" : "none"} /> {saved ? t("wish.saved") : t("wish.add")}
     </button>
   );
 }
@@ -72,11 +73,11 @@ export function ProductCard({ p, locale }: { p: CardProduct; locale: Locale }) {
       <Link to={`/product/${p.slug}`} className="block">
         <div className="aspect-square bg-bg3">
           {img ? <img src={img} alt={name} loading="lazy" className="h-full w-full object-cover" />
-            : <div className="flex h-full items-center justify-center text-4xl" aria-hidden>📦</div>}
+            : <div className="flex h-full items-center justify-center text-muted" aria-hidden><ImageOff size={40} strokeWidth={1.25} /></div>}
         </div>
       </Link>
       <div className="flex flex-1 flex-col gap-1 p-4">
-        {p.review_count > 0 && <p className="muted m-0 text-xs">{"★".repeat(Math.round(avg))}{"☆".repeat(5 - Math.round(avg))} ({p.review_count})</p>}
+        {p.review_count > 0 && <Rating value={avg} count={p.review_count} size={14} label={t("rating.label", { value: avg.toFixed(1), count: p.review_count })} />}
         <Link to={`/product/${p.slug}`} className="line-clamp-2 font-medium no-underline">{name}</Link>
         <p className="m-0 font-bold">
           {formatNpr(p.discount_price_paisa ?? p.price_paisa)}

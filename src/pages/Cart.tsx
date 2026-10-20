@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ShoppingCart, ImageOff } from "@/ui";
 import { useCart } from "@/lib/cart";
 import { useT } from "@/lib/i18n";
 import { loadCartProducts } from "@/lib/api";
@@ -17,7 +18,7 @@ export default function Cart() {
   if (!items.length)
     return (
       <main className="container-page py-16 text-center">
-        <p className="text-5xl" aria-hidden>🛒</p>
+        <ShoppingCart aria-hidden size={56} strokeWidth={1.5} className="mx-auto" />
         <h1 className="mt-2 text-xl font-semibold">{t("cart.empty")}</h1>
         <Link to="/shop" className="btn btn-primary mt-4">{t("cart.continue")}</Link>
       </main>
@@ -37,7 +38,7 @@ export default function Cart() {
           <li key={i.productId} className="card flex gap-3">
             {l ? (
               <>
-                {l.image ? <img src={imageUrl(l.image)!} alt="" className="h-20 w-20 rounded-lg object-cover" /> : <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-bg3 text-2xl" aria-hidden>📦</div>}
+                {l.image ? <img src={imageUrl(l.image)!} alt="" className="h-20 w-20 rounded-lg object-cover" /> : <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-surface-2 text-muted" aria-hidden><ImageOff size={28} strokeWidth={1.5} /></div>}
                 <div className="flex-1">
                   <Link to={`/product/${l.slug}`} className="font-medium no-underline">{locale === "ne" && l.name_ne ? l.name_ne : l.name_en}</Link>
                   <p className="m-0 font-bold">{formatNpr(l.discount_price_paisa ?? l.price_paisa)}</p>

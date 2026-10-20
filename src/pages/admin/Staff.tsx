@@ -39,7 +39,7 @@ export default function Staff() {
         const form = e.currentTarget;
         const fd = new FormData(form);
         const err = await inviteStaff(String(fd.get("email")), String(fd.get("role")), fd.getAll("permissions").map(String));
-        setMsg(err ? { ok: false, text: err } : { ok: true, text: "✓" });
+        setMsg(err ? { ok: false, text: err } : { ok: true, text: t("common.saved") });
         if (!err) { form.reset(); reload(); }
       }}>
         <h2 className="m-0 font-semibold">{t("admin.invite")}</h2>

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Star } from "@/ui";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
@@ -68,7 +69,7 @@ export default function ProductEdit() {
         setBusy(false);
         if (r.error) setMsg({ ok: false, text: r.error });
         else if (!id) nav(`/admin/products/${r.id}`, { replace: true });
-        else { setMsg({ ok: true, text: `✓ ${t("admin.save")}` }); reload(); }
+        else { setMsg({ ok: true, text: t("common.saved") }); reload(); }
       }}>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="field"><span>{t("admin.name_en")}</span><input name="name_en" required maxLength={200} defaultValue={p?.name_en} /></label>
@@ -99,7 +100,7 @@ export default function ProductEdit() {
               {images.map((i) => (
                 <li key={i.id} className="relative">
                   <img src={imageUrl(i.storage_path)!} alt="" className="h-24 w-24 rounded-lg object-cover" />
-                  {i.is_primary && <span className="badge badge-ok absolute left-1 top-1">★</span>}
+                  {i.is_primary && <span className="badge badge-ok absolute left-1 top-1" title={t("admin.primary_image")}><Star aria-label={t("admin.primary_image")} size={14} fill="currentColor" /></span>}
                   <button className="badge badge-err absolute right-1 top-1" aria-label="Delete" onClick={async () => { await deleteProductImage(i.id, i.storage_path); reload(); }}>✕</button>
                 </li>
               ))}

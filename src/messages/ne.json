@@ -221,5 +221,9 @@
  "admin.legal": "कानुनी नाम",
  "admin.address": "ठेगाना",
  "admin.returns_en": "फिर्ता नीति (अंग्रेजी)",
- "admin.returns_ne": "फिर्ता नीति (नेपाली)"
+ "admin.returns_ne": "फिर्ता नीति (नेपाली)",
+ "rating.label": "५ मध्ये {value}, {count} समीक्षा",
+ "rating.stars": "५ मध्ये {value} तारा",
+ "common.saved": "सुरक्षित भयो",
+ "admin.primary_image": "मुख्य तस्बिर"
 }

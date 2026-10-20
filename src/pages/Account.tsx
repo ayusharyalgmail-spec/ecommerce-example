@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Heart, MapPin, Receipt, Star } from "@/ui";
 import { Link } from "react-router-dom";
 import { useT, dateLocale } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -23,12 +24,12 @@ function ReviewForm({ orderItemId, name, onDone }: { orderItemId: string; name: 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   if (msg?.ok) return <OkBox>{msg.text}</OkBox>;
-  if (!open) return <button className="btn btn-secondary !py-1 text-sm" onClick={() => setOpen(true)}>★ {t("review.write")}: {name}</button>;
+  if (!open) return <button className="btn btn-secondary !py-1 text-sm" onClick={() => setOpen(true)}><Star aria-hidden size={18} strokeWidth={1.75} /> {t("review.write")}: {name}</button>;
   return (
     <div className="card space-y-2">
       <p className="m-0 font-medium">{name}</p>
       <label className="field"><span>{t("review.rating")}</span>
-        <select value={rating} onChange={(e) => setRating(Number(e.target.value))}>{[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{"★".repeat(n)}</option>)}</select>
+        <select value={rating} onChange={(e) => setRating(Number(e.target.value))}>{[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{t("rating.stars", { value: n })}</option>)}</select>
       </label>
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("review.title")} maxLength={120} aria-label={t("review.title")} />
       <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={t("review.body")} maxLength={2000} rows={3} aria-label={t("review.body")} />
@@ -66,8 +67,8 @@ export default function Account() {
       <h1 className="text-3xl font-bold">{t("account.title")}</h1>
       <p className="muted m-0">{user?.email}</p>
       <div className="flex flex-wrap gap-2">
-        <Link className="btn btn-secondary" to="/account/wishlist">♥ {t("wish.title")}</Link>
-        <Link className="btn btn-secondary" to="/account/addresses">📍 {t("addr.title")}</Link>
+        <Link className="btn btn-secondary" to="/account/wishlist"><Heart aria-hidden size={20} strokeWidth={1.75} /> {t("wish.title")}</Link>
+        <Link className="btn btn-secondary" to="/account/addresses"><MapPin aria-hidden size={20} strokeWidth={1.75} /> {t("addr.title")}</Link>
         <PushToggle />
       </div>
       <h2 className="text-xl font-semibold">{t("account.orders")}</h2>
@@ -83,7 +84,7 @@ export default function Account() {
                 <div className="flex items-center gap-2">
                   <span className="badge badge-info">{t(`status.${o.status}`)}</span>
                   {o.status === "pending_confirmation" && <button className="btn btn-secondary !py-1 text-sm" onClick={async () => { await cancelOrder(o.id); reload(); }}>{t("track.cancel")}</button>}
-                  <Link className="btn btn-secondary !py-1 text-sm" to={`/orders/${o.id}/invoice`} aria-label={t("invoice.title")}>🧾</Link>
+                  <Link className="btn btn-secondary !py-1 text-sm" to={`/orders/${o.id}/invoice`} aria-label={t("invoice.title")}><Receipt aria-hidden size={20} strokeWidth={1.75} /></Link>
                 </div>
               </div>
               {o.status === "delivered" && o.order_items.filter((i) => i.product_id && !d.reviewed.has(i.product_id)).map((i) => (

@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { Printer } from "@/ui";
 import { supabase } from "@/lib/supabase";
 import { useT, pick, dateLocale } from "@/lib/i18n";
 import { formatNpr } from "@/lib/money";
@@ -66,7 +67,7 @@ export default function Invoice() {
         <div className="flex justify-between"><dt>{t("checkout.payment")}</dt><dd className="m-0">{o.payment_method.toUpperCase()} · {t(`pay.${o.payment_status}`)}</dd></div>
       </dl>
       {returns && <p className="whitespace-pre-line pt-4 text-xs">{returns}</p>}
-      <button className="btn btn-primary no-print" onClick={() => window.print()}>🖨 {t("invoice.print")}</button>
+      <button className="btn btn-primary no-print" onClick={() => window.print()}><Printer aria-hidden size={20} strokeWidth={1.75} /> {t("invoice.print")}</button>
     </main>
   );
 }

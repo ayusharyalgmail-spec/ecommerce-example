@@ -1,7 +1,9 @@
 import { Link, useSearchParams } from "react-router-dom";
+import { Search } from "@/ui";
 import { supabase } from "@/lib/supabase";
 import { useT, pick } from "@/lib/i18n";
 import { useQuery } from "@/lib/useQuery";
+import { useCategories } from "@/lib/queries";
 import { CARD_COLUMNS, ProductCard, type CardProduct } from "@/components/Product";
 import { Loading, useTitle } from "@/components/ui";
 
@@ -16,7 +18,7 @@ export default function Shop() {
   const category = sp.get("category") ?? "";
   const q = sp.get("q") ?? "";
 
-  const cats = useQuery(async () => (await supabase.from("categories").select("id,slug,name_en,name_ne").eq("is_active", true).order("sort_order")).data ?? [], []);
+  const cats = useCategories();
   const res = useQuery(async () => {
     let query = supabase.from("products").select(CARD_COLUMNS, { count: "exact" }).eq("status", "published");
     const cat = cats.data?.find((c) => c.slug === category);
@@ -55,7 +57,7 @@ export default function Shop() {
         </ul>
       ) : (
         <div className="py-16 text-center">
-          <p className="text-4xl" aria-hidden>🔍</p>
+          <Search aria-hidden size={40} strokeWidth={1.5} className="mx-auto" />
           <p className="mt-2 font-medium">{t("shop.none")}</p>
           <p className="muted">{t("shop.none.hint")}</p>
           <Link to="/shop" className="btn btn-secondary mt-4">{t("shop.clear")}</Link>

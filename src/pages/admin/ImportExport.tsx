@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Download } from "@/ui";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
 import { importProducts } from "@/lib/api";
@@ -35,8 +36,8 @@ export default function ImportExport() {
     <main className="max-w-2xl space-y-4">
       <h1 className="text-3xl font-bold">{t("admin.csv")}</h1>
       <div className="flex flex-wrap gap-2">
-        <button className="btn btn-secondary" onClick={exportProducts}>⬇ Products CSV</button>
-        <button className="btn btn-secondary" onClick={exportOrders}>⬇ Orders CSV</button>
+        <button className="btn btn-secondary" onClick={exportProducts}><Download aria-hidden size={20} strokeWidth={1.75} /> Products CSV</button>
+        <button className="btn btn-secondary" onClick={exportOrders}><Download aria-hidden size={20} strokeWidth={1.75} /> Orders CSV</button>
       </div>
       <p className="muted text-sm">Columns: sku, name_en, name_ne, description_en, description_ne, price_paisa, discount_price_paisa, stock_quantity, category_slug. Rows with a known SKU update that product; others are created as drafts.</p>
       <div className="card space-y-3">

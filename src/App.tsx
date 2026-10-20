@@ -1,6 +1,9 @@
 import { lazy, Suspense } from "react";
+import { Search } from "@/ui";
 import { createBrowserRouter, RouterProvider, Link } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider, useT } from "@/lib/i18n";
+import { ThemeProvider } from "@/theme/ThemeProvider";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import Layout from "@/components/Chrome";
@@ -20,6 +23,8 @@ import Addresses from "@/pages/Addresses";
 import Invoice from "@/pages/Invoice";
 
 // The dashboard is code-split so shoppers never download it.
+// Dev-only primitives gallery (not part of the production bundle: the route is added only in DEV).
+const UiGallery = import.meta.env.DEV ? lazy(() => import("@/pages/UiGallery")) : null;
 const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
 const AdminHome = lazy(() => import("@/pages/admin/AdminHome"));
 const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
@@ -39,12 +44,14 @@ function NotFound() {
   const { t } = useT();
   return (
     <main className="container-page py-16 text-center">
-      <p className="text-5xl" aria-hidden>🔍</p>
+      <Search aria-hidden size={48} strokeWidth={1.5} className="mx-auto" />
       <h1 className="text-2xl font-bold">404</h1>
       <Link to="/" className="btn btn-primary mt-4">{t("nav.home")}</Link>
     </main>
   );
 }
+
+const queryClient = new QueryClient();
 
 const lazyEl = (el: React.ReactNode) => <Suspense fallback={<Loading />}>{el}</Suspense>;
 
@@ -84,6 +91,7 @@ const router = createBrowserRouter([
           { path: "settings", element: lazyEl(<AdminSettings />) },
         ],
       },
+      ...(UiGallery ? [{ path: "/_ui", element: lazyEl(<UiGallery />) }] : []),
       { path: "*", element: <NotFound /> },
     ],
   },
@@ -91,12 +99,16 @@ const router = createBrowserRouter([
 
 export default function App() {
   return (
-    <I18nProvider>
-      <AuthProvider>
-        <CartProvider>
-          <RouterProvider router={router} />
-        </CartProvider>
-      </AuthProvider>
-    </I18nProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <CartProvider>
+              <RouterProvider router={router} />
+            </CartProvider>
+          </AuthProvider>
+        </I18nProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check, CircleCheck } from "@/ui";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useT, dateLocale } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
@@ -96,10 +97,10 @@ export default function Track() {
     <main className="container-page max-w-2xl space-y-4">
       {order && isNew && (
         <div className="card text-center" style={{ background: "var(--color-surface-success)" }}>
-          <p className="m-0 text-3xl" aria-hidden>✓</p>
+          <CircleCheck aria-hidden size={40} strokeWidth={1.75} className="mx-auto text-success" />
           <h1 className="m-0 text-2xl font-bold">{t("track.placed")}</h1>
           <p className="mt-1">{t("track.save")}</p>
-          <button className="btn btn-secondary mt-3" onClick={copy}>{copied ? "✓" : t("track.copy")}</button>
+          <button className="btn btn-secondary mt-3" onClick={copy}>{copied ? <Check aria-label={t("common.saved")} size={20} /> : t("track.copy")}</button>
         </div>
       )}
       {!order && <h1 className="text-3xl font-bold">{t("track.title")}</h1>}

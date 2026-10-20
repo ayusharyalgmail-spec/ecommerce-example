@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Bell, BellOff } from "@/ui";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
 
@@ -44,10 +45,10 @@ export default function PushToggle({ orderToken }: { orderToken?: string }) {
     setState("off");
   }
 
-  if (state === "denied") return <p className="muted m-0 text-sm">🔕 {t("push.denied")}</p>;
+  if (state === "denied") return <p className="muted m-0 flex items-center gap-2 text-sm"><BellOff aria-hidden size={18} /> {t("push.denied")}</p>;
   return (
     <button className="btn btn-secondary" disabled={state === "busy"} onClick={state === "on" ? disable : enable}>
-      🔔 {state === "on" ? t("push.on") : t("push.enable")}
+      <Bell aria-hidden size={20} strokeWidth={1.75} fill={state === "on" ? "currentColor" : "none"} /> {state === "on" ? t("push.on") : t("push.enable")}
     </button>
   );
 }

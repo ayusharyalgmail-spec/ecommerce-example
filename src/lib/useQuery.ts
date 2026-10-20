@@ -1,27 +1,33 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { keepPreviousData, useQuery as useTanQuery } from "@tanstack/react-query";
+import { useCallback, useId, useRef } from "react";
 
-/** Tiny data-loading hook: runs `fn` on mount and whenever `deps` change; `reload()` re-runs it. */
+/**
+ * Compatibility shim: the original `useQuery(fn, deps)` signature, now running on TanStack Query.
+ * Pages that have not migrated keep working; each call site gets a private cache entry (so no
+ * behaviour change). New code should call `useQuery` from @tanstack/react-query with a shared key
+ * (see lib/queries.ts) to get de-duplication and stale-while-revalidate.
+ */
 export function useQuery<T>(fn: () => Promise<T>, deps: readonly unknown[]) {
-  const [data, setData] = useState<T | undefined>();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tick, setTick] = useState(0);
+  const id = useId();
   const fnRef = useRef(fn);
   fnRef.current = fn;
-
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    fnRef.current()
-      .then((d) => { if (alive) { setData(d); setError(null); } })
-      .catch((e: unknown) => { if (alive) setError(e instanceof Error ? e.message : String(e)); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, tick]);
-
-  const reload = useCallback(() => setTick((n) => n + 1), []);
-  return { data, error, loading, reload };
+  const q = useTanQuery({
+    queryKey: ["legacy", id, ...deps],
+    queryFn: () => fnRef.current(),
+    staleTime: 0,
+    gcTime: 30_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData, // the old hook kept showing the previous data while reloading
+  });
+  const { refetch } = q;
+  const reload = useCallback(() => { void refetch(); }, [refetch]);
+  return {
+    data: q.data as T | undefined,
+    error: q.error ? (q.error instanceof Error ? q.error.message : String(q.error)) : null,
+    loading: q.isFetching,
+    reload,
+  };
 }
 
 /** Unwraps a Supabase `{ data, error }` result or throws. */

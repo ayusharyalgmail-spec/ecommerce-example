@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { ImageOff, Rating } from "@/ui";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { useT, pick } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -44,7 +45,7 @@ export default function ProductPage() {
       <div className="space-y-2">
         <div className="aspect-square overflow-hidden rounded-xl bg-bg3">
           {images[0] ? <img src={imageUrl(images[0].storage_path)!} alt={pick(locale, images[0].alt_en, images[0].alt_ne) || name} className="h-full w-full object-cover" />
-            : <div className="flex h-full items-center justify-center text-6xl" aria-hidden>📦</div>}
+            : <div className="flex h-full items-center justify-center text-muted" aria-hidden><ImageOff size={56} strokeWidth={1.25} /></div>}
         </div>
         {images.length > 1 && (
           <ul className="m-0 flex list-none gap-2 overflow-x-auto p-0">
@@ -54,7 +55,7 @@ export default function ProductPage() {
       </div>
 
       <div className="space-y-3">
-        {p.review_count > 0 && <p className="m-0 text-sm">{"★".repeat(Math.round(avg))}{"☆".repeat(5 - Math.round(avg))} <span className="muted">({p.review_count})</span></p>}
+        {p.review_count > 0 && <Rating value={avg} count={p.review_count} size={18} label={t("rating.label", { value: avg.toFixed(1), count: p.review_count })} />}
         <h1 className="m-0 text-3xl font-bold">{name}</h1>
         <p className="m-0 text-2xl font-bold">
           {formatNpr(p.discount_price_paisa ?? p.price_paisa)}
@@ -83,7 +84,7 @@ export default function ProductPage() {
               const author = fn.length ? `${fn[0][0]}. ${fn.length > 1 ? fn[fn.length - 1] : ""}` : "—";
               return (
                 <li key={r.id} className="card">
-                  <p className="m-0">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)} <span className="font-medium">{r.title}</span></p>
+                  <p className="m-0 flex flex-wrap items-center gap-2"><Rating value={r.rating} label={t("rating.stars", { value: r.rating })} /> <span className="font-medium">{r.title}</span></p>
                   <p className="m-0">{r.body}</p>
                   <p className="muted m-0 text-xs">{author} {r.order_item_id && <span className="badge badge-ok ml-2">{t("product.verified")}</span>}</p>
                 </li>

@@ -18,7 +18,7 @@ export default function Zones() {
     const form = e.currentTarget;
     const f = Object.fromEntries([...new FormData(form).entries()].map(([k, v]) => [k, String(v)]));
     const err = await saveZone(f);
-    setMsg(err ? { ok: false, text: err } : { ok: true, text: "✓" });
+    setMsg(err ? { ok: false, text: err } : { ok: true, text: t("common.saved") });
     if (!err) { if (reset) form.reset(); reload(); }
   };
 

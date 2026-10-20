@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Receipt, TriangleAlert } from "@/ui";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
@@ -52,7 +53,7 @@ export default function OrderDetail() {
   return (
     <main className="space-y-4">
       <h1 className="text-3xl font-bold">{o.order_number} <span className="badge badge-info align-middle">{t(`status.${o.status}`)}</span></h1>
-      {o.risk_flags.length > 0 && <p className="badge badge-warn !block !rounded-lg !p-2">⚠ {t("admin.risk")}: {o.risk_flags.join(", ")}</p>}
+      {o.risk_flags.length > 0 && <p className="flex items-center gap-2 rounded-lg bg-[var(--warning-tint)] p-2 text-warning"><TriangleAlert aria-hidden size={18} /> {t("admin.risk")}: {o.risk_flags.join(", ")}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         <section className="card space-y-1">
           <h2 className="m-0 font-semibold">{t("admin.customer")}</h2>
@@ -111,7 +112,7 @@ export default function OrderDetail() {
         </div>
       </section>
 
-      <Link to={`/orders/${o.id}/invoice`} className="btn btn-secondary no-print no-underline" target="_blank">🧾 {t("invoice.title")}</Link>
+      <Link to={`/orders/${o.id}/invoice`} className="btn btn-secondary no-print no-underline" target="_blank"><Receipt aria-hidden size={20} strokeWidth={1.75} /> {t("invoice.title")}</Link>
 
       {next.length > 0 && (
         <section className="card space-y-3 no-print">
