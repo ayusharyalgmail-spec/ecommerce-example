@@ -16,7 +16,7 @@ export default function AdminLayout() {
     ["/admin/coupons", t("admin.coupons"), "coupons.manage"], ["/admin/zones", t("admin.zones"), "delivery.manage"],
     ["/admin/reports", t("admin.reports"), "reports.view"], ["/admin/import", t("admin.csv"), "csv.manage"],
     ["/admin/staff", t("admin.staff"), "staff.manage"], ["/admin/audit", t("admin.audit"), "audit.view"],
-    ["/admin/settings", t("admin.settings"), "settings.manage"],
+    ["/admin/storefront", t("admin.storefront"), "settings.manage"], ["/admin/settings", t("admin.settings"), "settings.manage"],
   ];
   return (
     <div className="container-page">

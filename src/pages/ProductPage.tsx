@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { recordView } from "@/catalog/data";
 import { ImageOff, Rating } from "@/ui";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { useT, pick } from "@/lib/i18n";
@@ -26,6 +28,8 @@ export default function ProductPage() {
     return { p, reviews: r.data ?? [], related: (rel.data ?? []) as CardProduct[], wa: st.data?.whatsapp_number as string | null, wished: !!w.data };
   }, [slug, user?.id]);
 
+  const viewedId = data?.p?.id;
+  useEffect(() => { if (viewedId) recordView(viewedId); }, [viewedId]);
   useTitle(data?.p ? pick(locale, data.p.name_en, data.p.name_ne) : undefined);
   if (loading && data === undefined) return <Loading />;
   if (!data) return <main className="container-page py-16 text-center"><h1 className="text-2xl font-bold">404</h1></main>;

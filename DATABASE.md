@@ -132,6 +132,11 @@ Single row (`id smallint primary key default 1 check (id = 1)`).
 - At least one active owner must remain (enforced by trigger on update/delete).
 - Auth: read by self and by `staff.manage`; write by `staff.manage` only.
 
+### banners (Phase 3)
+- `id uuid PK`, `title_en NN`, `title_ne`, `subtitle_en/ne`, `cta_label_en/ne`, `link_url` (internal path only, check `^/[^/\]`), `image_path NN` (object in public bucket `store-assets`), `image_alt_en/ne`, `sort_order int`, `is_active bool`, `starts_at`, `ends_at` (end after start), `created_at`, `updated_at` (touch trigger).
+- Trigger `trg_banners_audit` and `trg_categories_audit` write insert/update/delete to `audit_logs` through `app_private.audit_row()` (SECURITY DEFINER, execute revoked from clients).
+- Storage: staff upload/delete policies on `store-assets` for `banners/*` (`settings.manage`) and `categories/*` (`products.manage`).
+
 ### categories
 - `id PK`, `parent_id uuid FK categories(id) on delete restrict`, `slug text NN UQ`, `name_en text NN`, `name_ne text`, `image_path text`, `sort_order int NN default 0`, `is_active boolean NN default true`
 - CK: a category cannot be its own parent; depth limited to 2 by trigger.
@@ -480,7 +485,8 @@ RLS is enabled on **every** table in `public`; default deny.
 | store_settings | select safe view | same | update `settings.manage` |
 | profiles | none | own select/update | select `customers.view` |
 | staff_members | none | none | select self; manage `staff.manage` |
-| categories | select active | same | write `products.manage` |
+| categories | select active | same | write `products.manage` (audited) |
+| banners | select active and in date window | same | all `settings.manage` (audited) |
 | products | select published | same | select all (`products.view`/`manage`), write `products.manage` (stock columns via RPC) |
 | product_images | select (published products) | same | write `products.manage` |
 | stock_movements | none | none | select `products.manage` |

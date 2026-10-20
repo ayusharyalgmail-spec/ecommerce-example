@@ -28,6 +28,7 @@ function useAdminNav(): NavItem[] {
     { to: "/admin/import", label: t("admin.csv"), perm: "csv.manage", icon: Upload },
     { to: "/admin/staff", label: t("admin.staff"), perm: "staff.manage", icon: Users },
     { to: "/admin/audit", label: t("admin.audit"), perm: "audit.view", icon: History },
+    { to: "/admin/storefront", label: t("admin.storefront"), perm: "settings.manage", icon: Palette },
     { to: "/admin/settings", label: t("admin.settings"), perm: "settings.manage", icon: Settings },
   ];
   return all.filter((i) => perms.has(i.perm));

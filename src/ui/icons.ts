@@ -6,6 +6,6 @@ export {
   Trash2, TriangleAlert, Info, CircleCheck, LoaderCircle, Truck, Phone, MessageCircle, Share2,
   ImageOff, Sun, Moon, Monitor, Download, Menu, Store, Inbox,
   LayoutDashboard, ClipboardList, Ticket, ChartColumn, Upload, Users, History, Settings, Ellipsis, LogOut, LogIn,
-  ExternalLink, Keyboard, Palette, Mail,
+  ExternalLink, Keyboard, Palette, Mail, SlidersHorizontal, ShieldCheck, Tag, RotateCcw, Sparkles, TrendingUp, Clock,
 } from "lucide-react";
 export type { LucideIcon, LucideProps } from "lucide-react";

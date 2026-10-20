@@ -15,8 +15,10 @@ import { useUiV2 } from "@/shell/useUiV2";
 import { ToastHost } from "@/ui";
 import { RequireAuth, RequireStaff } from "@/components/ui";
 
-import Home from "@/pages/Home";
-import Shop from "@/pages/Shop";
+const HomeLegacy = lazy(() => import("@/pages/Home"));
+const HomeV2 = lazy(() => import("@/catalog/HomeV2"));
+const ShopLegacy = lazy(() => import("@/pages/Shop"));
+const ShopV2 = lazy(() => import("@/catalog/ShopV2"));
 import ProductPage from "@/pages/ProductPage";
 import Cart from "@/pages/Cart";
 import Checkout from "@/pages/Checkout";
@@ -45,11 +47,18 @@ const AdminReports = lazy(() => import("@/pages/admin/Reports"));
 const AdminImport = lazy(() => import("@/pages/admin/ImportExport"));
 const AdminStaff = lazy(() => import("@/pages/admin/Staff"));
 const AdminAudit = lazy(() => import("@/pages/admin/Audit"));
+const AdminStorefront = lazy(() => import("@/pages/admin/Storefront"));
 const AdminSettings = lazy(() => import("@/pages/admin/Settings"));
 
 /** ui_v2 flag (UX-D020): vendors on the flag get the Bazaar Glass shell, everyone else keeps the current one. */
 function Shell() {
   return useUiV2() ? <AppLayout /> : <Layout />;
+}
+
+/** Picks the v1 or v2 screen by the ui_v2 flag; both are lazy chunks so neither counts against the entry budget. */
+function Routed({ v1, v2 }: { v1: React.ReactNode; v2: React.ReactNode }) {
+  const on = useUiV2();
+  return <Suspense fallback={<PageSkeleton />}>{on ? v2 : v1}</Suspense>;
 }
 
 const queryClient = new QueryClient();
@@ -61,8 +70,8 @@ const router = createBrowserRouter([
     element: <Shell />,
     errorElement: <RouteError />,
     children: [
-      { path: "/", element: <Home /> },
-      { path: "/shop", element: <Shop /> },
+      { path: "/", element: <Routed v1={<HomeLegacy />} v2={<HomeV2 />} /> },
+      { path: "/shop", element: <Routed v1={<ShopLegacy />} v2={<ShopV2 />} /> },
       { path: "/product/:slug", element: <ProductPage /> },
       { path: "/cart", element: <Cart /> },
       { path: "/checkout", element: <Checkout /> },
@@ -86,6 +95,7 @@ const router = createBrowserRouter([
           { path: "reviews", element: lazyEl(<AdminReviews />) },
           { path: "coupons", element: lazyEl(<AdminCoupons />) },
           { path: "zones", element: lazyEl(<AdminZones />) },
+          { path: "storefront", element: lazyEl(<AdminStorefront />) },
           { path: "reports", element: lazyEl(<AdminReports />) },
           { path: "import", element: lazyEl(<AdminImport />) },
           { path: "staff", element: lazyEl(<AdminStaff />) },
