@@ -7,6 +7,7 @@ import { toWebp } from "@/lib/image";
 import { useQuery } from "@/lib/useQuery";
 import { assetUrl, BANNER_COLUMNS, type Banner } from "@/catalog/data";
 import { Loading, useTitle } from "@/components/ui";
+import { BrandPanel } from "@/admin/BrandPanel";
 
 type Row = Banner & { sort_order: number; is_active: boolean };
 
@@ -70,6 +71,8 @@ export default function Storefront() {
   return (
     <main className="space-y-8">
       <h1 className="m-0 text-3xl font-bold">{t("admin.storefront")}</h1>
+
+      <BrandPanel />
 
       <section aria-labelledby="sf-banners" className="space-y-3">
         <h2 id="sf-banners" className="m-0 text-2xl font-bold">{t("admin.banners")}</h2>

@@ -44,13 +44,17 @@ const AdminHomeLegacy = lazy(() => import("@/pages/admin/AdminHome"));
 const DashboardV2 = lazy(() => import("@/admin/DashboardV2"));
 const AdminOrdersV2 = lazy(() => import("@/admin/OrdersV2"));
 const AdminOrdersLegacy = lazy(() => import("@/pages/admin/Orders"));
-const AdminOrder = lazy(() => import("@/pages/admin/OrderDetail"));
-const AdminProducts = lazy(() => import("@/pages/admin/Products"));
-const AdminProductEdit = lazy(() => import("@/pages/admin/ProductEdit"));
+const AdminOrderLegacy = lazy(() => import("@/pages/admin/OrderDetail"));
+const OrderDetailV2 = lazy(() => import("@/admin/OrderDetailV2"));
+const AdminProductsLegacy = lazy(() => import("@/pages/admin/Products"));
+const ProductsV2 = lazy(() => import("@/admin/ProductsV2"));
+const AdminProductEditLegacy = lazy(() => import("@/pages/admin/ProductEdit"));
+const ProductEditV2 = lazy(() => import("@/admin/ProductEditV2"));
 const AdminReviews = lazy(() => import("@/pages/admin/Reviews"));
 const AdminCoupons = lazy(() => import("@/pages/admin/Coupons"));
 const AdminZones = lazy(() => import("@/pages/admin/Zones"));
-const AdminReports = lazy(() => import("@/pages/admin/Reports"));
+const AdminReportsLegacy = lazy(() => import("@/pages/admin/Reports"));
+const ReportsV2 = lazy(() => import("@/admin/ReportsV2"));
 const AdminImport = lazy(() => import("@/pages/admin/ImportExport"));
 const AdminStaff = lazy(() => import("@/pages/admin/Staff"));
 const AdminAudit = lazy(() => import("@/pages/admin/Audit"));
@@ -95,15 +99,15 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Routed v1={<AdminHomeLegacy />} v2={<DashboardV2 />} /> },
           { path: "orders", element: <Routed v1={<AdminOrdersLegacy />} v2={<AdminOrdersV2 />} /> },
-          { path: "orders/:id", element: lazyEl(<AdminOrder />) },
-          { path: "products", element: lazyEl(<AdminProducts />) },
-          { path: "products/new", element: lazyEl(<AdminProductEdit />) },
-          { path: "products/:id", element: lazyEl(<AdminProductEdit />) },
+          { path: "orders/:id", element: <Routed v1={<AdminOrderLegacy />} v2={<OrderDetailV2 />} /> },
+          { path: "products", element: <Routed v1={<AdminProductsLegacy />} v2={<ProductsV2 />} /> },
+          { path: "products/new", element: <Routed v1={<AdminProductEditLegacy />} v2={<ProductEditV2 />} /> },
+          { path: "products/:id", element: <Routed v1={<AdminProductEditLegacy />} v2={<ProductEditV2 />} /> },
           { path: "reviews", element: lazyEl(<AdminReviews />) },
           { path: "coupons", element: lazyEl(<AdminCoupons />) },
           { path: "zones", element: lazyEl(<AdminZones />) },
           { path: "storefront", element: lazyEl(<AdminStorefront />) },
-          { path: "reports", element: lazyEl(<AdminReports />) },
+          { path: "reports", element: <Routed v1={<AdminReportsLegacy />} v2={<ReportsV2 />} /> },
           { path: "import", element: lazyEl(<AdminImport />) },
           { path: "staff", element: lazyEl(<AdminStaff />) },
           { path: "audit", element: lazyEl(<AdminAudit />) },
