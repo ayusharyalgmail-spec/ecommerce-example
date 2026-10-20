@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "./cn";
 import type { LucideIcon } from "./icons";
 
-const iconButtonStyles = cva(
+export const iconButtonStyles = cva(
   [
     "relative inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-transparent",
     "transition-[transform,background-color] duration-[var(--duration-1)] ease-[var(--ease-out)] active:scale-[.94]",

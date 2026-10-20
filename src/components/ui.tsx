@@ -2,15 +2,13 @@ import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
+import { PageSkeleton } from "@/shell/PageSkeleton";
 
 export function useTitle(title: string | undefined) {
   useEffect(() => { if (title) document.title = title; }, [title]);
 }
 
-export const Loading = () => {
-  const { t } = useT();
-  return <p className="muted container-page" role="status">{t("common.loading")}</p>;
-};
+export const Loading = () => <PageSkeleton />;
 
 export const ErrorBox = ({ children }: { children: React.ReactNode }) => (
   <p role="alert" className="alert" style={{ background: "var(--color-surface-error)", color: "var(--color-error)" }}>{children}</p>

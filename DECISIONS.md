@@ -605,3 +605,19 @@ Status of every entry below: **Proposed** (drafted in Phase 0, 20 Oct 2026, awai
 - **UX-D017:** Glass alpha raised after the contrast review: light `.84`, dark `.72`; text on glass is ink only. `scripts/contrast.mjs` (74 checks) is the gate.
 - **UX-D020:** The rollout flag column and `BrandLoader` exist, but the token re-map itself is global (no per-vendor switch), because no production vendor is live yet. From Phase 2 on, new shell and page layouts are gated by `data-ui="v2"`.
 - **Budget gate:** `size-limit` is replaced by `scripts/check-budget.mjs`, because the bundler splits the initial JS across several chunks and the real budget is "everything index.html loads". Initial JS is **190.7 kB gzip of 200 kB (95%)**.
+
+---
+
+## UX-D021: Supabase Realtime is stubbed out of the storefront bundle
+
+**Status:** Proposed (Phase 2, 20 Oct 2026).
+
+**Context:** `@supabase/supabase-js` 2.118 always constructs a `RealtimeClient`, so `realtime-js` and `phoenix` (about 16 kB gzip measured) ship in the entry although the storefront never opens a socket. After Phase 2 the shell brought the initial JS to 196.3 kB of the 200 kB budget.
+
+**Decision:** `vite.config.ts` aliases `@supabase/realtime-js` to `src/lib/realtime-stub.ts`, which implements only the calls supabase-js makes (`setAuth`, `channel`, `getChannels`, `removeChannel`, `removeAllChannels`). `channel()` throws a clear error. The real package stays reachable through the `realtime-real` alias for the admin live-orders toast (AD-6, Phase 7), which must load it from a lazy admin chunk.
+
+**Result:** initial JS 196.3 kB to 180.1 kB (90% of budget). Auth, queries, RPC and Storage verified unchanged in the browser.
+
+**Risks:** A supabase-js upgrade could call a new Realtime method (the stub would throw or no-op); mitigated by the `npm run build` and unit/e2e checks and by pinning supabase-js minor versions. Phase 7 must not use `supabase.channel()` from the shared client.
+
+**Revisit:** If supabase-js makes Realtime lazy or optional.

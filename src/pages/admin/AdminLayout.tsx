@@ -1,10 +1,14 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { useUiV2 } from "@/shell/useUiV2";
+import AdminShell from "@/shell/AdminShell";
 
 export default function AdminLayout() {
   const { t } = useT();
   const { perms } = useAuth();
+  const v2 = useUiV2();
+  if (v2) return <AdminShell />;
   // Hiding links is cosmetic only; the database re-checks every permission.
   const links: [string, string, string, boolean?][] = [
     ["/admin", t("admin.dashboard"), "orders.view", true], ["/admin/orders", t("admin.orders"), "orders.view"],

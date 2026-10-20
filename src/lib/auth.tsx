@@ -56,6 +56,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
 
+/** Static auth for stories and the dev gallery: no network, fixed permissions. */
+export function MockAuthProvider({ perms, email = "owner@example.com", children }: { perms: string[]; email?: string; children: React.ReactNode }) {
+  const value = useMemo<Ctx>(() => ({
+    user: { id: "mock", email } as User, loading: false, perms: new Set(perms), isStaff: perms.length > 0,
+    signOut: async () => {}, refresh: async () => {},
+  }), [perms, email]);
+  return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
+}
+
 export function useAuth() {
   const c = useContext(AuthCtx);
   if (!c) throw new Error("useAuth outside AuthProvider");

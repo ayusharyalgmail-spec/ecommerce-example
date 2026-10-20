@@ -1,7 +1,9 @@
 export { cn } from "./cn";
 export * from "./icons";
 export { Button, buttonStyles, type ButtonProps } from "./Button";
-export { IconButton, type IconButtonProps } from "./IconButton";
+export { IconButton, iconButtonStyles, type IconButtonProps } from "./IconButton";
+export { IconLink } from "./IconLink";
+export { SegmentedControl } from "./SegmentedControl";
 export { Field, Input, Textarea, Select } from "./Field";
 export { Checkbox, Radio, ChoiceCard, Switch } from "./Choice";
 export { Chip } from "./Chip";

@@ -24,9 +24,13 @@ export function useStoreSettings() {
     queryKey: ["settings", "public"],
     staleTime: TEN_MIN,
     queryFn: async () => {
-      const { data, error } = await supabase.from("store_settings").select("store_name,brand,ui_v2").single();
+      const { data, error } = await supabase.from("store_settings").select("store_name,brand,ui_v2,contact_phone,whatsapp_number,contact_email,policies").single();
       if (error) throw new Error(error.message);
-      return data as { store_name: string; brand: { primary?: string } | null; ui_v2: boolean };
+      return data as {
+        store_name: string; brand: { primary?: string } | null; ui_v2: boolean;
+        contact_phone: string | null; whatsapp_number: string | null; contact_email: string | null;
+        policies: { returns_en?: string; returns_ne?: string } | null;
+      };
     },
   });
 }

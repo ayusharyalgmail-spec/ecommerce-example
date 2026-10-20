@@ -21,7 +21,15 @@ export default defineConfig({
   // Lazily imported overlays are pre-bundled up front. Without this the dev server discovers them mid-session,
   // re-optimizes, and can leave two copies of React loaded ("Invalid hook call").
   optimizeDeps: { include: ["@radix-ui/react-dialog", "@radix-ui/react-popover", "@radix-ui/react-tooltip", "vaul", "sonner"] },
-  resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
+  resolve: {
+    alias: [
+      { find: "@", replacement: path.resolve(import.meta.dirname, "src") },
+      // The real package stays reachable for the future admin live-orders module (lazy chunk only).
+      { find: "realtime-real", replacement: path.resolve(import.meta.dirname, "node_modules/@supabase/realtime-js") },
+      // Everything else (supabase-js) gets a stub: saves about 25 kB gzip in the entry. See src/lib/realtime-stub.ts.
+      { find: /^@supabase\/realtime-js$/, replacement: path.resolve(import.meta.dirname, "src/lib/realtime-stub.ts") },
+    ],
+  },
   // host: true exposes the dev server on your LAN so phones can open http://<your-ip>:3001
   server: { port: 3001, host: true },
   test: { environment: "jsdom", include: ["src/**/*.test.{ts,tsx}"], setupFiles: ["./src/test-setup.ts"] },

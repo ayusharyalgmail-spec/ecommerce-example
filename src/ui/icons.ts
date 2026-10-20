@@ -5,5 +5,7 @@ export {
   MapPin, Receipt, Printer, X, Check, ChevronLeft, ChevronRight, ChevronDown, Plus, Minus, Globe,
   Trash2, TriangleAlert, Info, CircleCheck, LoaderCircle, Truck, Phone, MessageCircle, Share2,
   ImageOff, Sun, Moon, Monitor, Download, Menu, Store, Inbox,
+  LayoutDashboard, ClipboardList, Ticket, ChartColumn, Upload, Users, History, Settings, Ellipsis, LogOut, LogIn,
+  ExternalLink, Keyboard, Palette, Mail,
 } from "lucide-react";
 export type { LucideIcon, LucideProps } from "lucide-react";

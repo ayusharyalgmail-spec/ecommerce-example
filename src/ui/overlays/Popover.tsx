@@ -8,11 +8,14 @@ export type PopoverProps = {
   children: React.ReactNode;
   align?: "start" | "center" | "end";
   className?: string;
+  /** Optional controlled mode, so menu items can close the popover. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export default function PopoverImpl({ trigger, children, align = "center", className }: PopoverProps) {
+export default function PopoverImpl({ trigger, children, align = "center", className, open, onOpenChange }: PopoverProps) {
   return (
-    <P.Root>
+    <P.Root open={open} onOpenChange={onOpenChange}>
       <P.Trigger asChild>{trigger}</P.Trigger>
       <P.Portal>
         <P.Content align={align} sideOffset={8} collisionPadding={12} className={cn("glass z-50 max-w-[calc(100vw-1.5rem)] rounded-xl p-4", className)}>

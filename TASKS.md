@@ -110,3 +110,20 @@ Estimated total: **16.75 days** in 35 tasks (week 1: 4.5, week 2: 5.25, week 3: 
 ## Phase 2 to 9
 
 Kept in `docs/ux-overhaul/PHASES.md`. Each is expanded into tasks like the above at its own kickoff, after the previous phase's exit criteria and your approval.
+
+## Phase 2 status (20 Oct 2026)
+
+| Item (PHASES.md) | Status | Note |
+|---|---|---|
+| Glass top bar, hide on scroll down / show on scroll up | done | verified with simulated scroll; real device manual |
+| Floating glass bottom nav, hidden in checkout and with keyboard | done | keyboard detection verified with synthetic focus events; real Android IME manual |
+| Expanded layout: category menu, account menu, footer | done | desktop view measured, not eyeballed (pane scaling) |
+| Toast host, error boundary, 404 with illustration | done | |
+| Route skeletons | done | `Loading` renders `PageSkeleton` everywhere |
+| View transitions | partial | enabled on shell links and shortcuts; visual result not inspected |
+| Theme and language switchers, Appearance (Full/Lite) | done | footer and desktop account menu |
+| viewport `interactive-widget`, dual theme-color | done | |
+| Shortcuts (`/`, `g c`, `?`) and skip link | done | tested |
+| Copy pass, critique pass | partial | manual; `design:*` skills unavailable; Nepali needs native review |
+| Admin shell skeleton | done | not verified with a real staff login |
+| Extra: Realtime stub (ADR UX-D021) | done | initial JS 196.3 to 180.1 kB |

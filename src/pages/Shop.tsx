@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Search } from "@/ui";
 import { supabase } from "@/lib/supabase";
@@ -17,6 +18,9 @@ export default function Shop() {
   const sort = sp.get("sort") ?? "newest";
   const category = sp.get("category") ?? "";
   const q = sp.get("q") ?? "";
+  const searchRef = useRef<HTMLInputElement>(null);
+  const wantsFocus = sp.get("focus") === "search";
+  useEffect(() => { if (wantsFocus) searchRef.current?.focus(); }, [wantsFocus]);
 
   const cats = useCategories();
   const res = useQuery(async () => {
@@ -37,7 +41,7 @@ export default function Shop() {
     <main className="container-page space-y-4">
       <h1 className="text-3xl font-bold">{t("shop.title")}</h1>
       <form className="grid gap-2 sm:grid-cols-[1fr_auto_auto]" role="search" onSubmit={(e) => e.preventDefault()}>
-        <input defaultValue={q} key={q} placeholder={t("shop.search")} aria-label={t("shop.search")}
+        <input ref={searchRef} defaultValue={q} key={q} placeholder={t("shop.search")} aria-label={t("shop.search")}
           onKeyDown={(e) => { if (e.key === "Enter") go({ q: e.currentTarget.value, page: "" }); }}
           onBlur={(e) => { if (e.target.value !== q) go({ q: e.target.value, page: "" }); }} />
         <select value={category} onChange={(e) => go({ category: e.target.value, page: "" })} aria-label={t("nav.shop")}>

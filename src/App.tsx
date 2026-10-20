@@ -1,6 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Search } from "@/ui";
-import { createBrowserRouter, RouterProvider, Link } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider, useT } from "@/lib/i18n";
 import { ThemeProvider } from "@/theme/ThemeProvider";
@@ -8,8 +7,13 @@ import { BrandLoader } from "@/theme/BrandLoader";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import Layout from "@/components/Chrome";
+import AppLayout from "@/shell/AppLayout";
+import { RouteError } from "@/shell/RouteError";
+import { NotFound } from "@/shell/NotFound";
+import { PageSkeleton } from "@/shell/PageSkeleton";
+import { useUiV2 } from "@/shell/useUiV2";
 import { ToastHost } from "@/ui";
-import { Loading, RequireAuth, RequireStaff } from "@/components/ui";
+import { RequireAuth, RequireStaff } from "@/components/ui";
 
 import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
@@ -27,6 +31,7 @@ import Invoice from "@/pages/Invoice";
 // The dashboard is code-split so shoppers never download it.
 // Dev-only primitives gallery (not part of the production bundle: the route is added only in DEV).
 const UiGallery = import.meta.env.DEV ? lazy(() => import("@/pages/UiGallery")) : null;
+const DevShells = import.meta.env.DEV ? lazy(() => import("@/pages/DevShells")) : null;
 const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
 const AdminHome = lazy(() => import("@/pages/admin/AdminHome"));
 const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
@@ -42,24 +47,19 @@ const AdminStaff = lazy(() => import("@/pages/admin/Staff"));
 const AdminAudit = lazy(() => import("@/pages/admin/Audit"));
 const AdminSettings = lazy(() => import("@/pages/admin/Settings"));
 
-function NotFound() {
-  const { t } = useT();
-  return (
-    <main className="container-page py-16 text-center">
-      <Search aria-hidden size={48} strokeWidth={1.5} className="mx-auto" />
-      <h1 className="text-2xl font-bold">404</h1>
-      <Link to="/" className="btn btn-primary mt-4">{t("nav.home")}</Link>
-    </main>
-  );
+/** ui_v2 flag (UX-D020): vendors on the flag get the Bazaar Glass shell, everyone else keeps the current one. */
+function Shell() {
+  return useUiV2() ? <AppLayout /> : <Layout />;
 }
 
 const queryClient = new QueryClient();
 
-const lazyEl = (el: React.ReactNode) => <Suspense fallback={<Loading />}>{el}</Suspense>;
+const lazyEl = (el: React.ReactNode) => <Suspense fallback={<PageSkeleton />}>{el}</Suspense>;
 
 const router = createBrowserRouter([
   {
-    element: <Layout />,
+    element: <Shell />,
+    errorElement: <RouteError />,
     children: [
       { path: "/", element: <Home /> },
       { path: "/shop", element: <Shop /> },
@@ -94,6 +94,7 @@ const router = createBrowserRouter([
         ],
       },
       ...(UiGallery ? [{ path: "/_ui", element: lazyEl(<UiGallery />) }] : []),
+      ...(DevShells ? [{ path: "/_ui/shells/*", element: lazyEl(<DevShells />) }] : []),
       { path: "*", element: <NotFound /> },
     ],
   },
