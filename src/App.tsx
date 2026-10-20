@@ -21,8 +21,10 @@ const ShopLegacy = lazy(() => import("@/pages/Shop"));
 const ShopV2 = lazy(() => import("@/catalog/ShopV2"));
 const ProductLegacy = lazy(() => import("@/pages/ProductPage"));
 const ProductV2 = lazy(() => import("@/catalog/ProductPageV2"));
-import Cart from "@/pages/Cart";
-import Checkout from "@/pages/Checkout";
+const CartLegacy = lazy(() => import("@/pages/Cart"));
+const CartV2 = lazy(() => import("@/checkout/CartV2"));
+const CheckoutLegacy = lazy(() => import("@/pages/Checkout"));
+const CheckoutV2 = lazy(() => import("@/checkout/CheckoutV2"));
 import Track from "@/pages/Track";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
@@ -74,8 +76,8 @@ const router = createBrowserRouter([
       { path: "/", element: <Routed v1={<HomeLegacy />} v2={<HomeV2 />} /> },
       { path: "/shop", element: <Routed v1={<ShopLegacy />} v2={<ShopV2 />} /> },
       { path: "/product/:slug", element: <Routed v1={<ProductLegacy />} v2={<ProductV2 />} /> },
-      { path: "/cart", element: <Cart /> },
-      { path: "/checkout", element: <Checkout /> },
+      { path: "/cart", element: <Routed v1={<CartLegacy />} v2={<CartV2 />} /> },
+      { path: "/checkout", element: <Routed v1={<CheckoutLegacy />} v2={<CheckoutV2 />} /> },
       { path: "/track", element: <Track /> },
       { path: "/login", element: <Login /> },
       { path: "/auth/callback", element: <AuthCallback /> },

@@ -8,6 +8,7 @@ export { Field, Input, Textarea, Select } from "./Field";
 export { Checkbox, Radio, ChoiceCard, Switch } from "./Choice";
 export { Chip } from "./Chip";
 export { Badge } from "./Badge";
+export { Alert } from "./Alert";
 export { Card } from "./Card";
 export { Skeleton, SkeletonGroup } from "./Skeleton";
 export { EmptyState } from "./EmptyState";
