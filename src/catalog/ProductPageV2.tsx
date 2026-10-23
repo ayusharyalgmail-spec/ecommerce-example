@@ -7,6 +7,7 @@ import { useT, pick } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { useCategories } from "@/lib/queries";
+import { ShareButton } from "@/components/ShareButton";
 import { formatNpr } from "@/lib/money";
 import { toggleWishlist } from "@/lib/api";
 import { useTitle } from "@/components/ui";
@@ -162,15 +163,11 @@ export default function ProductPageV2() {
   const price = p.discount_price_paisa ?? p.price_paisa;
   const sale = p.discount_price_paisa != null && p.discount_price_paisa < p.price_paisa;
   const cat = cats?.find((c) => c.id === p.category_id);
-  const href = window.location.href;
-  const shareText = encodeURIComponent(`${name} - ${formatNpr(price)} ${href}`);
+  const href = window.location.origin + window.location.pathname; // no query/hash in shared links
   const waNum = wa?.replace(/\D/g, "");
   const wished = wish ?? d.wished;
   const addToCart = () => { add(p.id, qty); toast.success(t("product.added_toast")); };
-  const share = async () => {
-    if (navigator.share) { try { await navigator.share({ title: name, text: `${name} - ${formatNpr(price)}`, url: href }); } catch { /* cancelled */ } }
-    else window.open(`https://wa.me/?text=${shareText}`, "_blank", "noopener,noreferrer");
-  };
+  const shareData = { title: name, text: `${name} - ${formatNpr(price)}`, url: href };
 
   return (
     <main className={`${PAGE_X} space-y-8 py-4 pb-32 md:pb-8`}>
@@ -196,6 +193,9 @@ export default function ProductPageV2() {
             {out ? <Badge tone="danger">{t("product.out")}</Badge>
               : available < p.low_stock_threshold ? <Badge tone="warning">{t("product.low", { n: available })}</Badge>
               : <Badge tone="success">{t("product.in_stock", { n: available })}</Badge>}
+            {(p as { min_purchase_qty?: number }).min_purchase_qty != null && (p as { min_purchase_qty?: number }).min_purchase_qty! > 1 && (
+              <Badge tone="info">{t("product.min_qty", { n: String((p as { min_purchase_qty?: number }).min_purchase_qty) })}</Badge>
+            )}
             {p.units_sold > 0 && <span className="text-sm text-muted">{t("product.units_sold", { n: p.units_sold })}</span>}
           </p>
           <p className="m-0 flex items-center gap-2 text-sm"><Truck aria-hidden size={18} strokeWidth={1.75} />{t("trust.delivery")} · {t("trust.cod")}</p>
@@ -226,7 +226,7 @@ export default function ProductPageV2() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" leadingIcon={Share2} onClick={() => void share()}>{t("pdp.share")}</Button>
+            <ShareButton data={shareData} trigger={<Button variant="secondary" leadingIcon={Share2}>{t("pdp.share")}</Button>} />
             {waNum && <a className="inline-flex min-h-12 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold text-ink no-underline" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${waNum}?text=${encodeURIComponent(`${name} ${href}`)}`}><MessageCircle aria-hidden size={20} strokeWidth={1.75} />{t("pdp.ask")}</a>}
           </div>
           {desc && <p className="m-0 whitespace-pre-line pt-2">{desc}</p>}

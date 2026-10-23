@@ -1,7 +1,9 @@
+import { randomUUID } from "@/lib/uuid";
 // All data access goes straight from the browser to Supabase. Authorisation is enforced by
 // Postgres (RLS policies + SECURITY DEFINER functions that re-check permissions), never by this file.
 import { supabase, errorCode } from "./supabase";
 import { normalizePhone, rupeesToPaisa } from "./money";
+import { ImageError, prepareImage, type ImageErrorCode } from "./image";
 
 /* ----- storefront ----- */
 
@@ -37,13 +39,24 @@ export async function quoteCheckout(items: { productId: string; quantity: number
 
 export type PlaceInput = {
   idempotencyKey: string; items: { productId: string; quantity: number }[]; zoneId: string; coupon: string;
-  paymentMethod: "cod" | "manual"; name: string; phone: string; email: string;
+  paymentMethod: "cod" | "manual"; name: string; phone: string; confirmPhone?: string; email: string;
   address: string; landmark: string; municipality: string; district: string; locale: string;
 };
 
-export async function placeOrder(i: PlaceInput): Promise<{ ok: true; token: string } | { ok: false; code: string }> {
+export type PlaceResult =
+  | { ok: true; token: string }
+  /** The server already has an order for this idempotency key (a lost response or a double submit). The token is
+   * stored hashed, so it cannot be returned again; the shopper is shown the order number instead. */
+  | { ok: true; replayed: true; orderNumber: string }
+  /** `retryable`: the request may or may not have reached the server, so the caller must keep the same idempotency key. */
+  | { ok: false; code: string; retryable: boolean };
+
+/** Codes the SQL function raises before committing anything: the order definitely does not exist. */
+const DEFINITE = new Set(["INSUFFICIENT_STOCK", "COUPON_UNAVAILABLE", "VALIDATION_FAILED", "RATE_LIMIT_EXCEEDED", "NOT_FOUND", "IDEMPOTENCY_CONFLICT"]);
+
+export async function placeOrder(i: PlaceInput): Promise<PlaceResult> {
   const phone = normalizePhone(i.phone);
-  if (!phone || i.name.trim().length < 2 || i.address.trim().length < 3 || !i.items.length) return { ok: false, code: "VALIDATION_FAILED" };
+  if (!phone || i.name.trim().length < 2 || i.address.trim().length < 3 || !i.items.length) return { ok: false, code: "VALIDATION_FAILED", retryable: false };
   // Optional fields are sent as null (omitting them makes PostgREST look for a different function signature).
   const { data, error } = await supabase.rpc("place_order", {
     p_idempotency_key: i.idempotencyKey, p_items: i.items, p_zone_id: i.zoneId, p_coupon: i.coupon.trim() || null,
@@ -51,9 +64,16 @@ export async function placeOrder(i: PlaceInput): Promise<{ ok: true; token: stri
     p_recipient: i.name.trim(), p_ship_phone: phone, p_address: i.address.trim(), p_landmark: i.landmark.trim() || null,
     p_municipality: i.municipality.trim() || null, p_district: i.district.trim() || null, p_locale: i.locale,
   });
-  if (error) return { ok: false, code: errorCode(error.message) };
-  const res = data as { trackingToken?: string };
-  return res.trackingToken ? { ok: true, token: res.trackingToken } : { ok: false, code: "IDEMPOTENCY_CONFLICT" };
+  if (error) {
+    const code = errorCode(error.message);
+    // A fetch failure has no Postgres code; the order may still have been committed.
+    if (!error.code && code === "UNKNOWN") return { ok: false, code: "NETWORK", retryable: true };
+    return { ok: false, code, retryable: !DEFINITE.has(code) };
+  }
+  const res = data as { trackingToken?: string; orderNumber?: string; replayed?: boolean };
+  if (res.trackingToken) return { ok: true, token: res.trackingToken };
+  if (res.replayed && res.orderNumber) return { ok: true, replayed: true, orderNumber: res.orderNumber };
+  return { ok: false, code: "UNKNOWN", retryable: true };
 }
 
 export async function cancelOrder(orderId: string) {
@@ -130,6 +150,7 @@ export async function saveProduct(f: Record<string, string>, id?: string): Promi
     price_paisa: rupeesToPaisa(f.price), discount_price_paisa: discount > 0 ? discount : null,
     discount_label_en: s("discount_label_en"), discount_label_ne: s("discount_label_ne"),
     sku: s("sku"), category_id: s("category_id"), status, published_at: status === "published" ? new Date().toISOString() : null,
+    min_purchase_qty: Math.max(1, Math.floor(Number(f.min_purchase_qty ?? 1))),
   };
   if (id) {
     const { error } = await supabase.from("products").update(row).eq("id", id);
@@ -141,14 +162,74 @@ export async function saveProduct(f: Record<string, string>, id?: string): Promi
 }
 
 export async function addProductImage(productId: string, path: string, meta?: { width: number; height: number; blur_color: string }) {
-  const { data: existing } = await supabase.from("product_images").select("id").eq("product_id", productId);
-  const { error } = await supabase.from("product_images").insert({ product_id: productId, storage_path: path, is_primary: !existing?.length, sort_order: existing?.length ?? 0, ...meta });
+  const { data: existing, error: e1 } = await supabase.from("product_images").select("id,is_primary,sort_order").eq("product_id", productId);
+  if (e1) return e1.message;
+  const next = Math.max(-1, ...(existing ?? []).map((r) => r.sort_order)) + 1;
+  const { error } = await supabase.from("product_images").insert({ product_id: productId, storage_path: path, is_primary: !existing?.some((r) => r.is_primary), sort_order: next, ...meta });
   return error?.message ?? null;
 }
 
-export async function deleteProductImage(imageId: string, path: string) {
-  await supabase.from("product_images").delete().eq("id", imageId);
-  await supabase.storage.from("product-images").remove([path]);
+/** Codes the editors translate as `img.<code>`. */
+export type UploadCode = ImageErrorCode | "not_saved" | "storage_denied" | "storage_too_large" | "storage" | "metadata" | "network";
+
+/** Prepare, upload, then record the image. Metadata is written only after the upload succeeds, and the stored
+ * file is removed again if the metadata insert fails, so no orphan is left behind. */
+export async function uploadProductImage(productId: string | undefined, file: File): Promise<{ ok: true } | { ok: false; code: UploadCode; detail?: string }> {
+  if (!productId) return { ok: false, code: "not_saved" };
+  let prepared;
+  try { prepared = await prepareImage(file); }
+  catch (e) { return { ok: false, code: e instanceof ImageError ? e.code : "decode", detail: String(e) }; }
+  const path = `products/${productId}/${randomUUID()}.${prepared.ext}`;
+  const up = await supabase.storage.from("product-images").upload(path, prepared.blob, { contentType: prepared.blob.type, upsert: false });
+  if (up.error) {
+    const st = Number((up.error as { statusCode?: string | number }).statusCode ?? (up.error as { status?: number }).status);
+    const m = up.error.message ?? "";
+    const code: UploadCode = st === 413 || /too large|exceeded/i.test(m) ? "storage_too_large"
+      : st === 401 || st === 403 || /row-level security|unauthori[sz]ed|not allowed/i.test(m) ? "storage_denied"
+      : /fetch|network/i.test(m) ? "network" : "storage";
+    return { ok: false, code, detail: m };
+  }
+  const err = await addProductImage(productId, path, prepared.meta);
+  if (err) {
+    await supabase.storage.from("product-images").remove([path]); // best effort; staff have delete permission
+    return { ok: false, code: "metadata", detail: err };
+  }
+  return { ok: true };
+}
+
+/** Swap the order of two images. */
+export async function swapImageOrder(a: { id: string; sort_order: number }, b: { id: string; sort_order: number }) {
+  const r1 = await supabase.from("product_images").update({ sort_order: b.sort_order }).eq("id", a.id);
+  if (r1.error) return r1.error.message;
+  const r2 = await supabase.from("product_images").update({ sort_order: a.sort_order }).eq("id", b.id);
+  if (r2.error) { await supabase.from("product_images").update({ sort_order: a.sort_order }).eq("id", a.id); return r2.error.message; }
+  return null;
+}
+
+/** One primary per product is enforced by a partial unique index, so clear the old one first. */
+export async function setPrimaryImage(productId: string, imageId: string) {
+  const { data: prev } = await supabase.from("product_images").select("id").eq("product_id", productId).eq("is_primary", true).maybeSingle();
+  const r1 = await supabase.from("product_images").update({ is_primary: false }).eq("product_id", productId).eq("is_primary", true);
+  if (r1.error) return r1.error.message;
+  const r2 = await supabase.from("product_images").update({ is_primary: true }).eq("id", imageId);
+  if (r2.error) {
+    if (prev) await supabase.from("product_images").update({ is_primary: true }).eq("id", prev.id);
+    return r2.error.message;
+  }
+  return null;
+}
+
+/** Delete the row first (what the storefront reads), then the file. Promotes another image if the primary was removed. */
+export async function deleteProductImage(imageId: string, path: string, productId?: string) {
+  const { data: row } = await supabase.from("product_images").select("is_primary").eq("id", imageId).maybeSingle();
+  const { error } = await supabase.from("product_images").delete().eq("id", imageId);
+  if (error) return error.message;
+  await supabase.storage.from("product-images").remove([path]); // an orphaned file is harmless; a missing row is not
+  if (row?.is_primary && productId) {
+    const { data: next } = await supabase.from("product_images").select("id").eq("product_id", productId).order("sort_order").limit(1).maybeSingle();
+    if (next) await supabase.from("product_images").update({ is_primary: true }).eq("id", next.id);
+  }
+  return null;
 }
 
 export async function saveSettings(f: Record<string, string | boolean>) {

@@ -1,3 +1,4 @@
+import { randomUUID } from "@/lib/uuid";
 import { useState } from "react";
 import { Check, CircleCheck } from "@/ui";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
@@ -34,7 +35,7 @@ function PaymentProof({ token, onDone }: { token: string; onDone: () => void }) 
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) { setMsg({ ok: false, text: t("pay.file_bad") }); return; }
     setBusy(true);
     try {
-      const path = `proofs/${crypto.randomUUID()}.webp`;
+      const path = `proofs/${randomUUID()}.webp`;
       const up = await supabase.storage.from("payment-proofs").upload(path, await toWebp(file), { contentType: "image/webp" });
       if (up.error) throw up.error;
       const { error } = await supabase.rpc("submit_payment_proof", { p_token: token, p_reference: ref || null, p_proof_path: path });
@@ -125,6 +126,7 @@ export default function Track() {
         </section>
       ) : (
         <>
+          {sp.get("placed") && <p className="alert" role="status">{t("track.placed")}</p>}
           {search && <ErrorBox>{t("track.not_found")}</ErrorBox>}
           <form className="card space-y-3" onSubmit={(e) => {
             e.preventDefault();

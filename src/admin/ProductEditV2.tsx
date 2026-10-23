@@ -4,16 +4,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Card, ChevronLeft, ChevronRight, Field, Input, Select, Skeleton, Star, Textarea, Trash2, IconButton, toast } from "@/ui";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
-import { adjustStock, addProductImage, deleteProductImage, saveProduct } from "@/lib/api";
+import { adjustStock, deleteProductImage, saveProduct, setPrimaryImage, swapImageOrder, uploadProductImage } from "@/lib/api";
 import { paisaToRupees } from "@/lib/money";
-import { imageMeta, toWebp } from "@/lib/image";
 import { useTitle } from "@/components/ui";
 import { ProductCardV2 } from "@/catalog/ProductCardV2";
 import type { CardProduct } from "@/components/Product";
 
 type Img = { id: string; storage_path: string; is_primary: boolean; sort_order: number };
-type Form = Record<"name_en" | "name_ne" | "description_en" | "description_ne" | "price" | "discount_price" | "discount_label_en" | "discount_label_ne" | "sku" | "category_id" | "stock" | "status", string>;
-const EMPTY: Form = { name_en: "", name_ne: "", description_en: "", description_ne: "", price: "", discount_price: "", discount_label_en: "", discount_label_ne: "", sku: "", category_id: "", stock: "0", status: "draft" };
+type Form = Record<"name_en" | "name_ne" | "description_en" | "description_ne" | "price" | "discount_price" | "discount_label_en" | "discount_label_ne" | "sku" | "category_id" | "stock" | "status" | "min_purchase_qty", string>;
+const EMPTY: Form = { name_en: "", name_ne: "", description_en: "", description_ne: "", price: "", discount_price: "", discount_label_en: "", discount_label_ne: "", sku: "", category_id: "", stock: "0", status: "draft", min_purchase_qty: "1" };
 const DRAFT = "admin.product.draft";
 
 export default function ProductEditV2() {
@@ -39,7 +38,7 @@ export default function ProductEditV2() {
   });
   const p = q.data?.p;
   const initial = useMemo<Form>(() => {
-    if (p) return { name_en: p.name_en, name_ne: p.name_ne ?? "", description_en: p.description_en ?? "", description_ne: p.description_ne ?? "", price: paisaToRupees(p.price_paisa), discount_price: p.discount_price_paisa ? paisaToRupees(p.discount_price_paisa) : "", discount_label_en: p.discount_label_en ?? "", discount_label_ne: p.discount_label_ne ?? "", sku: p.sku ?? "", category_id: p.category_id ?? "", stock: "0", status: p.status };
+    if (p) return { name_en: p.name_en, name_ne: p.name_ne ?? "", description_en: p.description_en ?? "", description_ne: p.description_ne ?? "", price: paisaToRupees(p.price_paisa), discount_price: p.discount_price_paisa ? paisaToRupees(p.discount_price_paisa) : "", discount_label_en: p.discount_label_en ?? "", discount_label_ne: p.discount_label_ne ?? "", sku: p.sku ?? "", category_id: p.category_id ?? "", stock: "0", status: p.status, min_purchase_qty: String((p as { min_purchase_qty?: number }).min_purchase_qty ?? 1) };
     try { return { ...EMPTY, ...JSON.parse(sessionStorage.getItem(DRAFT) ?? "{}") }; } catch { return EMPTY; }
   }, [p]);
   const [edits, setEdits] = useState<Partial<Form>>({});
@@ -75,30 +74,21 @@ export default function ProductEditV2() {
   };
 
   async function upload(file0: File) {
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file0.type) || file0.size > 10 * 1024 * 1024) { toast.error(t("pay.file_bad")); return; }
     setBusy(true);
-    try {
-      const path = `products/${id}/${crypto.randomUUID()}.webp`;
-      const blob = await toWebp(file0);
-      const up = await supabase.storage.from("product-images").upload(path, blob, { contentType: "image/webp" });
-      if (up.error) throw up.error;
-      const err = await addProductImage(id!, path, await imageMeta(blob));
-      if (err) toast.error(err); else reload();
-    } catch (e) { toast.error(e instanceof Error ? e.message : t("err.UNKNOWN")); }
+    const r = await uploadProductImage(id, file0);
+    if (r.ok) { toast.success(t("img.done")); reload(); }
+    else { if (r.detail) console.warn("[image upload]", r.code, r.detail); toast.error(t(`img.${r.code}`)); }
     setBusy(false);
   }
-  const move = async (i: number, dir: -1 | 1) => {
-    const a = images[i], b = images[i + dir]; if (!a || !b) return;
+  const run = async (op: () => Promise<string | null>) => {
     setBusy(true);
-    await Promise.all([supabase.from("product_images").update({ sort_order: b.sort_order }).eq("id", a.id), supabase.from("product_images").update({ sort_order: a.sort_order }).eq("id", b.id)]);
+    const err = await op();
+    if (err) { console.warn("[image op]", err); toast.error(t("img.op_failed")); }
     setBusy(false); reload();
   };
-  const makePrimary = async (img: Img) => {
-    setBusy(true);
-    await supabase.from("product_images").update({ is_primary: false }).eq("product_id", id!);
-    await supabase.from("product_images").update({ is_primary: true }).eq("id", img.id);
-    setBusy(false); reload();
-  };
+  const move = (i: number, dir: -1 | 1) => { const a = images[i], b = images[i + dir]; if (a && b) void run(() => swapImageOrder(a, b)); };
+  const makePrimary = (img: Img) => run(() => setPrimaryImage(id!, img.id));
+
 
   const preview: CardProduct = {
     id: p?.id ?? "preview", slug: p?.slug ?? "preview", name_en: f.name_en || t("admin.preview_name"), name_ne: f.name_ne || null,
@@ -127,6 +117,7 @@ export default function ProductEditV2() {
             <Field label={t("admin.category")}>{(a) => <Select {...a} value={f.category_id} onChange={set("category_id")}><option value="">—</option>{q.data?.cats.map((c) => <option key={c.id} value={c.id}>{c.name_en}</option>)}</Select>}</Field>
             {!p && <Field label={t("admin.stock")}>{(a) => <Input {...a} type="number" min="0" value={f.stock} onChange={set("stock")} />}</Field>}
             <Field label={t("admin.status")}>{(a) => <Select {...a} value={f.status} onChange={set("status")}><option value="draft">draft</option><option value="published">published</option><option value="archived">archived</option></Select>}</Field>
+            <Field label={t("admin.min_purchase_qty")} hint={t("admin.min_purchase_qty_hint")}>{(a) => <Input {...a} type="number" min="1" step="1" value={f.min_purchase_qty} onChange={set("min_purchase_qty")} />}</Field>
           </Card>
           <Button type="submit" size="lg" loading={busy}>{t("admin.save")}</Button>
         </form>
@@ -148,13 +139,14 @@ export default function ProductEditV2() {
                   <div className="flex items-center justify-between">
                     <IconButton icon={ChevronLeft} label={t("admin.move_left")} variant="ghost" disabled={busy || n === 0} onClick={() => void move(n, -1)} />
                     <IconButton icon={ChevronRight} label={t("admin.move_right")} variant="ghost" disabled={busy || n === images.length - 1} onClick={() => void move(n, 1)} />
-                    <IconButton icon={Trash2} label={t("cart.remove")} variant="ghost" disabled={busy} onClick={async () => { await deleteProductImage(i.id, i.storage_path); reload(); }} />
+                    <IconButton icon={Trash2} label={t("cart.remove")} variant="ghost" disabled={busy} onClick={() => void run(() => deleteProductImage(i.id, i.storage_path, id))} />
                   </div>
                   {!i.is_primary && <Button size="sm" variant="secondary" block disabled={busy} onClick={() => void makePrimary(i)}>{t("admin.make_primary")}</Button>}
                 </li>
               ))}
             </ul>
-            <Field label={t("admin.add_photo")}>{(a) => <Input {...a} ref={file} type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(e) => { const x = e.target.files?.[0]; if (x) void upload(x); if (file.current) file.current.value = ""; }} />}</Field>
+            <Field label={t("admin.add_photo")}>{(a) => <Input {...a} ref={file} type="file" accept="image/*" disabled={busy} onChange={(e) => { const x = e.target.files?.[0]; if (x) void upload(x); if (file.current) file.current.value = ""; }} />}</Field>
+            {busy && <p role="status" className="m-0 text-sm text-muted">{t("img.uploading")}</p>}
           </Card>
           <Card className="space-y-3">
             <h2 className="m-0 text-lg font-bold">{t("admin.stock")}: {p.stock_quantity} <span className="text-sm font-normal text-muted">({t("admin.reserved")} {p.reserved_quantity})</span></h2>

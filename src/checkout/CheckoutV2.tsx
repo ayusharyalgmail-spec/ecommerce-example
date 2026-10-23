@@ -7,17 +7,24 @@ import { useT, pick } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { placeOrder, quoteCheckout, type Quote } from "@/lib/api";
+import { prepareImage } from "@/lib/image";
+import { randomUUID } from "@/lib/uuid";
 import { formatNpr } from "@/lib/money";
 import { useTitle } from "@/components/ui";
 import { PAGE_X } from "@/catalog/layout";
 
-type Addr = { id: string; label: string | null; recipient_name: string; phone: string; address_line: string; landmark: string | null; municipality: string | null; district: string | null; delivery_zone_id: string | null };
-type Fields = { name: string; phone: string; email: string; address: string; landmark: string; municipality: string; district: string };
-const EMPTY: Fields = { name: "", phone: "", email: "", address: "", landmark: "", municipality: "", district: "" };
-const DRAFT = "co.draft";
+// Jitpur-Simara Submetropolitan City — 20 wards
+const WARDS = Array.from({ length: 20 }, (_, i) => String(i + 1));
+const CITY = "Jitpur-Simara";
+const DISTRICT = "Bara";
 
-// Draft lives in sessionStorage only (this tab, cleared on success) so a refresh does not lose typed input.
-const readDraft = (): { f: Fields; zoneId: string; payment: "cod" | "manual"; step: number; applied: string } | null => { try { return JSON.parse(sessionStorage.getItem(DRAFT) ?? "null"); } catch { return null; } };
+type Fields = { name: string; phone: string; confirmPhone: string; ward: string; street: string };
+const EMPTY: Fields = { name: "", phone: "", confirmPhone: "", ward: "", street: "" };
+const DRAFT = "co.draft2";
+
+const readDraft = (): { f: Fields; zoneId: string; payment: "cod" | "manual"; step: number; applied: string } | null => {
+  try { return JSON.parse(sessionStorage.getItem(DRAFT) ?? "null"); } catch { return null; }
+};
 
 export default function CheckoutV2() {
   const { items, clear } = useCart();
@@ -30,13 +37,16 @@ export default function CheckoutV2() {
   const meta = useQuery({
     queryKey: ["checkout-meta", user?.id ?? null], staleTime: 60_000,
     queryFn: async () => {
-      const [z, s, prof, addr] = await Promise.all([
+      const [z, s, prof] = await Promise.all([
         supabase.from("delivery_zones").select("id,name_en,name_ne,fee_paisa").eq("is_active", true).order("sort_order"),
         supabase.from("store_settings").select("payment_settings").single(),
         user ? supabase.from("profiles").select("full_name,phone").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null }),
-        user ? supabase.from("customer_addresses").select("id,label,recipient_name,phone,address_line,landmark,municipality,district,delivery_zone_id").eq("user_id", user.id).order("is_default", { ascending: false }) : Promise.resolve({ data: [] }),
       ]);
-      return { zones: z.data ?? [], ps: (s.data?.payment_settings ?? {}) as { cod_enabled?: boolean; manual_enabled?: boolean; instructions_en?: string; instructions_ne?: string }, prof: prof.data, addrs: (addr.data ?? []) as Addr[] };
+      return {
+        zones: z.data ?? [],
+        ps: (s.data?.payment_settings ?? {}) as { cod_enabled?: boolean; manual_enabled?: boolean; instructions_en?: string; instructions_ne?: string },
+        prof: prof.data,
+      };
     },
   });
 
@@ -49,32 +59,37 @@ export default function CheckoutV2() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofUploading, setProofUploading] = useState(false);
+  const [proofPath, setProofPath] = useState<string | null>(null);
   const lastTotal = useRef<number | null>(null);
-  const idem = useRef(crypto.randomUUID());
+  const idem = useRef(randomUUID());
   const seeded = useRef(!!draft);
-  const set = (k: keyof Fields) => (e: React.ChangeEvent<HTMLInputElement>) => setF((p) => ({ ...p, [k]: e.target.value }));
+  const set = (k: keyof Fields) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setF((p) => ({ ...p, [k]: e.target.value }));
 
   const zones = meta.data?.zones ?? [];
   const ps = meta.data?.ps ?? {};
   const codEnabled = ps.cod_enabled !== false;
   const manualEnabled = !!ps.manual_enabled;
 
-  // Seeding form defaults from asynchronously loaded profile and zones is a sync with external data.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!meta.data) return;
     if (!seeded.current) {
       seeded.current = true;
-      setF((p) => ({ ...p, name: meta.data!.prof?.full_name ?? "", phone: meta.data!.prof?.phone ?? "", email: user?.email ?? "" }));
+      setF((p) => ({ ...p, name: meta.data!.prof?.full_name ?? "", phone: meta.data!.prof?.phone ?? "" }));
       setPayment(meta.data.ps.cod_enabled !== false ? "cod" : "manual");
     }
     if (!zoneId || !meta.data.zones.some((z) => z.id === zoneId)) setZoneId(meta.data.zones[0]?.id ?? "");
-  }, [meta.data, user?.email, zoneId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meta.data]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  useEffect(() => { try { sessionStorage.setItem(DRAFT, JSON.stringify({ f, zoneId, payment, step, applied })); } catch { /* private mode */ } }, [f, zoneId, payment, step, applied]);
+  useEffect(() => {
+    try { sessionStorage.setItem(DRAFT, JSON.stringify({ f, zoneId, payment, step, applied })); } catch { /* private mode */ }
+  }, [f, zoneId, payment, step, applied]);
 
-  // Quote logic is unchanged from v1: totals that move under the customer ask for a fresh confirmation (CHECKOUT-009).
   const itemsKey = JSON.stringify(items);
   useEffect(() => {
     if (!items.length || !zoneId) return;
@@ -91,26 +106,101 @@ export default function CheckoutV2() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemsKey, zoneId, applied]);
 
-  function applyAddress(a: Addr) {
-    setF((p) => ({ ...p, name: a.recipient_name, phone: a.phone, address: a.address_line, landmark: a.landmark ?? "", municipality: a.municipality ?? "", district: a.district ?? "" }));
-    if (a.delivery_zone_id && zones.some((z) => z.id === a.delivery_zone_id)) setZoneId(a.delivery_zone_id);
+  // Upload proof when file is selected
+  async function handleProofFile(file: File) {
+    setProofFile(file);
+    setProofPath(null);
+    setProofUploading(true);
+    setError(null);
+    try {
+      const prepared = await prepareImage(file, 1200);
+      const path = `proofs/pre_${randomUUID()}.${prepared.ext}`;
+      const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, prepared.blob, { contentType: `image/${prepared.ext === "webp" ? "webp" : "jpeg"}` });
+      if (upErr) throw upErr;
+      setProofPath(path);
+    } catch {
+      setError("img.network");
+      setProofFile(null);
+    }
+    setProofUploading(false);
+  }
+
+  // Step validation
+  function validate(): string | null {
+    if (step === 0) {
+      if (f.name.trim().length < 2) return "checkout.err_name";
+      if (!f.phone.trim()) return "checkout.err_phone";
+      if (f.phone.replace(/\D/g, "") !== f.confirmPhone.replace(/\D/g, "")) return "checkout.err_phone_mismatch";
+    }
+    if (step === 1) {
+      if (!f.ward) return "checkout.err_ward";
+      if (!zoneId) return "checkout.err_zone";
+    }
+    if (step === 2) {
+      if (!codEnabled && !manualEnabled) return "checkout.err_no_payment";
+      if (payment === "manual" && !proofPath) return "checkout.err_proof";
+    }
+    return null;
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (busy) return; // double-tap guard; the idempotency key below is the server-side guard
+    setError(null);
+    const v = validate();
+    if (v) { setError(v); return; }
+
     if (step < 3) { setStep(step + 1); window.scrollTo({ top: 0 }); return; }
-    setBusy(true); setError(null);
-    const r = await placeOrder({ idempotencyKey: idem.current, items, zoneId, coupon: applied, paymentMethod: payment, ...f, locale });
+
+    if (busy) return;
+    setBusy(true);
+    const address = `Ward ${f.ward}${f.street.trim() ? `, ${f.street.trim()}` : ""}`;
+    const r = await placeOrder({
+      idempotencyKey: idem.current, items, zoneId, coupon: applied, paymentMethod: payment,
+      name: f.name.trim(), phone: f.phone, confirmPhone: f.confirmPhone, email: user?.email ?? "",
+      address, landmark: "", municipality: CITY, district: DISTRICT, locale,
+    });
+    if (r.ok) {
+      // For manual payment: submit the pre-uploaded proof
+      if (payment === "manual" && proofPath && "token" in r) {
+        try {
+          await supabase.rpc("submit_payment_proof", { p_token: r.token, p_reference: null, p_proof_path: proofPath });
+        } catch { /* proof failed — order still placed; user can upload on track page */ }
+      }
+      try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ }
+      clear();
+      nav("token" in r ? `/track?token=${r.token}&new=1` : `/track?number=${encodeURIComponent(r.orderNumber)}&placed=1`, { replace: true });
+    } else {
+      setError(`err.${r.code}`);
+      if (!r.retryable && r.code !== "IDEMPOTENCY_CONFLICT") idem.current = randomUUID();
+    }
     setBusy(false);
-    if (r.ok) { try { sessionStorage.removeItem(DRAFT); } catch { /* ignore */ } clear(); nav(`/track?token=${r.token}&new=1`, { replace: true }); }
-    else { setError(`err.${r.code}`); if (r.code !== "IDEMPOTENCY_CONFLICT") idem.current = crypto.randomUUID(); }
   }
 
-  if (!items.length) return <main className={`${PAGE_X} py-8`}><EmptyState icon={ShoppingCart} title={t("cart.empty")} action={<Link to="/shop" className={buttonStyles({ variant: "primary" })}>{t("cart.continue")}</Link>} /></main>;
+  // Login gate
+  if (!user) return (
+    <main className={`${PAGE_X} py-16 text-center space-y-4`}>
+      <p className="text-4xl">🔒</p>
+      <h1 className="m-0 text-2xl font-bold">{t("checkout.login_required")}</h1>
+      <p className="text-muted">{t("checkout.login_desc")}</p>
+      <Link to={`/login?next=/checkout`} className={buttonStyles({ variant: "primary", size: "lg" })}>
+        {t("checkout.login_btn")}
+      </Link>
+    </main>
+  );
+
+  if (!items.length) return (
+    <main className={`${PAGE_X} py-8`}>
+      <EmptyState icon={ShoppingCart} title={t("cart.empty")} action={<Link to="/shop" className={buttonStyles({ variant: "primary" })}>{t("cart.continue")}</Link>} />
+    </main>
+  );
   if (meta.isLoading) return <main className={`${PAGE_X} space-y-3 py-4`}><Skeleton variant="row" /><Skeleton variant="row" className="h-48" /></main>;
 
-  const steps = [t("checkout.step.contact"), t("checkout.step.delivery"), t("checkout.step.payment"), t("checkout.step.review")];
+  const steps = [
+    `👤 ${t("checkout.step.contact")}`,
+    `📍 ${t("checkout.step.delivery")}`,
+    `💳 ${t("checkout.step.payment")}`,
+    `✅ ${t("checkout.step.review")}`,
+  ];
   const zone = zones.find((z) => z.id === zoneId);
   const instr = pick(locale, ps.instructions_en, ps.instructions_ne);
   const priceChanged = error === "checkout.price_changed";
@@ -144,57 +234,105 @@ export default function CheckoutV2() {
 
           {step === 0 && (
             <section aria-labelledby="s0" className="space-y-3">
-              <h2 id="s0" className="m-0 text-xl font-bold">{t("checkout.step.contact")}</h2>
-              <Field label={t("checkout.name")} required>{(a) => <Input {...a} value={f.name} onChange={set("name")} minLength={2} autoComplete="name" enterKeyHint="next" />}</Field>
-              <Field label={t("checkout.phone")} hint={t("checkout.phone_hint")} required>{(a) => <Input {...a} value={f.phone} onChange={set("phone")} inputMode="tel" type="tel" pattern="^(\+?977)?9\d{9}$" autoComplete="tel" enterKeyHint="next" />}</Field>
-              <Field label={t("checkout.email")}>{(a) => <Input {...a} type="email" value={f.email} onChange={set("email")} autoComplete="email" enterKeyHint="next" />}</Field>
+              <h2 id="s0" className="m-0 text-xl font-bold">👤 {t("checkout.step.contact")}</h2>
+              <Field label={`📝 ${t("checkout.name")}`} required>
+                {(a) => <Input {...a} value={f.name} onChange={set("name")} minLength={2} autoComplete="name" enterKeyHint="next" placeholder={t("checkout.name_placeholder")} />}
+              </Field>
+              <Field label={`📞 ${t("checkout.phone")}`} hint={t("checkout.phone_hint")} required>
+                {(a) => <Input {...a} value={f.phone} onChange={set("phone")} inputMode="tel" type="tel" pattern="^(\+?977)?9\d{9}$" autoComplete="tel" enterKeyHint="next" placeholder="98XXXXXXXX" />}
+              </Field>
+              <Field label={`🔁 ${t("checkout.confirm_phone")}`} hint={t("checkout.confirm_phone_hint")} required>
+                {(a) => <Input {...a} value={f.confirmPhone} onChange={set("confirmPhone")} inputMode="tel" type="tel" autoComplete="tel" enterKeyHint="next" placeholder="98XXXXXXXX" />}
+              </Field>
             </section>
           )}
 
           {step === 1 && (
             <section aria-labelledby="s1" className="space-y-4">
-              <h2 id="s1" className="m-0 text-xl font-bold">{t("checkout.step.delivery")}</h2>
-              {!!meta.data?.addrs.length && (
+              <h2 id="s1" className="m-0 text-xl font-bold">📍 {t("checkout.step.delivery")}</h2>
+              <div className="rounded-lg border border-line bg-surface-2 p-3 text-sm">
+                <p className="m-0 font-semibold">🏙️ {CITY} · {DISTRICT}</p>
+                <p className="m-0 text-muted">{t("checkout.city_note")}</p>
+              </div>
+              <Field label={`🏘️ ${t("checkout.ward")}`} required>
+                {(a) => (
+                  <select
+                    {...a}
+                    value={f.ward}
+                    onChange={set("ward")}
+                    className="input w-full"
+                    required
+                  >
+                    <option value="">{t("checkout.ward_pick")}</option>
+                    {WARDS.map((w) => <option key={w} value={w}>{t("checkout.ward_n", { n: w })}</option>)}
+                  </select>
+                )}
+              </Field>
+              <Field label={`🏠 ${t("checkout.street")}`} hint={t("checkout.street_hint")}>
+                {(a) => <Input {...a} value={f.street} onChange={set("street")} enterKeyHint="done" placeholder={t("checkout.street_placeholder")} />}
+              </Field>
+              {zones.length > 1 && (
                 <fieldset className="m-0 min-w-0 space-y-2 border-0 p-0">
-                  <legend className="mb-1 p-0 text-sm font-semibold">{t("addr.title")}</legend>
-                  {meta.data.addrs.map((a) => <ChoiceCard key={a.id} name="addr" label={a.label ?? a.recipient_name} description={a.address_line} onChange={() => applyAddress(a)} />)}
+                  <legend className="mb-1 p-0 text-sm font-semibold">🚚 {t("checkout.zone")}</legend>
+                  {zones.map((z) => <ChoiceCard key={z.id} name="zone" required checked={zoneId === z.id} onChange={() => setZoneId(z.id)} label={pick(locale, z.name_en, z.name_ne) ?? z.name_en} description={z.fee_paisa ? formatNpr(z.fee_paisa) : t("checkout.free")} />)}
                 </fieldset>
               )}
-              <Field label={t("checkout.address_line")} required>{(a) => <Input {...a} value={f.address} onChange={set("address")} minLength={3} autoComplete="street-address" enterKeyHint="next" />}</Field>
-              <Field label={t("checkout.landmark")}>{(a) => <Input {...a} value={f.landmark} onChange={set("landmark")} enterKeyHint="next" />}</Field>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={t("checkout.municipality")}>{(a) => <Input {...a} value={f.municipality} onChange={set("municipality")} autoComplete="address-level2" enterKeyHint="next" />}</Field>
-                <Field label={t("checkout.district")}>{(a) => <Input {...a} value={f.district} onChange={set("district")} autoComplete="address-level1" enterKeyHint="done" />}</Field>
-              </div>
-              <fieldset className="m-0 min-w-0 space-y-2 border-0 p-0">
-                <legend className="mb-1 p-0 text-sm font-semibold">{t("checkout.zone")}</legend>
-                {zones.map((z) => <ChoiceCard key={z.id} name="zone" required checked={zoneId === z.id} onChange={() => setZoneId(z.id)} label={pick(locale, z.name_en, z.name_ne) ?? z.name_en} description={z.fee_paisa ? formatNpr(z.fee_paisa) : t("checkout.free")} />)}
-              </fieldset>
             </section>
           )}
 
           {step === 2 && (
             <section aria-labelledby="s2" className="space-y-3">
-              <h2 id="s2" className="m-0 text-xl font-bold">{t("checkout.payment")}</h2>
+              <h2 id="s2" className="m-0 text-xl font-bold">💳 {t("checkout.payment")}</h2>
               <fieldset className="m-0 min-w-0 space-y-2 border-0 p-0">
                 <legend className="sr-only-text">{t("checkout.payment")}</legend>
-                {codEnabled && <ChoiceCard name="pay" checked={payment === "cod"} onChange={() => setPayment("cod")} label={t("checkout.cod")} description={t("checkout.cod_desc")} />}
-                {manualEnabled && <ChoiceCard name="pay" checked={payment === "manual"} onChange={() => setPayment("manual")} label={t("checkout.manual")} description={t("checkout.manual_desc")} />}
+                {codEnabled && <ChoiceCard name="pay" checked={payment === "cod"} onChange={() => setPayment("cod")} label={`💵 ${t("checkout.cod")}`} description={t("checkout.cod_desc")} />}
+                {manualEnabled && <ChoiceCard name="pay" checked={payment === "manual"} onChange={() => setPayment("manual")} label={`📲 ${t("checkout.manual")}`} description={t("checkout.manual_desc")} />}
               </fieldset>
-              {payment === "manual" && instr && <Alert tone="info"><p className="m-0 whitespace-pre-line">{instr}</p></Alert>}
+
+              {payment === "manual" && (
+                <div className="space-y-3 rounded-lg border border-brand-soft bg-surface p-4">
+                  <p className="m-0 font-semibold">📸 {t("checkout.proof_title")}</p>
+                  {instr && <p className="m-0 text-sm text-muted whitespace-pre-line">{instr}</p>}
+                  <Alert tone="warning">{t("checkout.proof_required_note")}</Alert>
+                  <Field label={t("checkout.proof_label")} hint={t("checkout.proof_hint")} required={payment === "manual"}>
+                    {(a) => (
+                      <Input
+                        {...a}
+                        type="file"
+                        accept="image/*"
+                        disabled={proofUploading}
+                        onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleProofFile(file); e.target.value = ""; }}
+                      />
+                    )}
+                  </Field>
+                  {proofUploading && <p role="status" className="m-0 text-sm text-muted">⏳ {t("checkout.proof_uploading")}</p>}
+                  {proofPath && !proofUploading && <p role="status" className="m-0 text-sm text-success">✅ {t("checkout.proof_ready")}</p>}
+                  {proofFile && !proofPath && !proofUploading && <p className="m-0 text-sm text-danger">❌ {t("checkout.proof_failed")}</p>}
+                </div>
+              )}
             </section>
           )}
 
           {step === 3 && (
             <section aria-labelledby="s3" className="space-y-4">
-              <h2 id="s3" className="m-0 text-xl font-bold">{t("checkout.step.review")}</h2>
+              <h2 id="s3" className="m-0 text-xl font-bold">✅ {t("checkout.step.review")}</h2>
               <dl className="m-0 space-y-3 rounded-lg border border-line bg-surface p-4">
-                <ReviewRow label={t("checkout.step.contact")} onEdit={() => setStep(0)} editLabel={t("checkout.edit")}>{f.name} · {f.phone}</ReviewRow>
-                <ReviewRow label={t("checkout.step.delivery")} onEdit={() => setStep(1)} editLabel={t("checkout.edit")}>{[f.address, f.landmark, f.municipality, f.district].filter(Boolean).join(", ")}{zone ? ` · ${pick(locale, zone.name_en, zone.name_ne)}` : ""}</ReviewRow>
-                <ReviewRow label={t("checkout.step.payment")} onEdit={() => setStep(2)} editLabel={t("checkout.edit")}>{payment === "cod" ? t("checkout.cod") : t("checkout.manual")}</ReviewRow>
+                <ReviewRow label={`👤 ${t("checkout.step.contact")}`} onEdit={() => setStep(0)} editLabel={t("checkout.edit")}>
+                  {f.name} · {f.phone}
+                </ReviewRow>
+                <ReviewRow label={`📍 ${t("checkout.step.delivery")}`} onEdit={() => setStep(1)} editLabel={t("checkout.edit")}>
+                  {t("checkout.ward_n", { n: f.ward })}{f.street ? `, ${f.street}` : ""} · {CITY}
+                  {zone ? ` · ${pick(locale, zone.name_en, zone.name_ne)}` : ""}
+                </ReviewRow>
+                <ReviewRow label={`💳 ${t("checkout.step.payment")}`} onEdit={() => setStep(2)} editLabel={t("checkout.edit")}>
+                  {payment === "cod" ? `💵 ${t("checkout.cod")}` : `📲 ${t("checkout.manual")}`}
+                  {payment === "manual" && proofPath && ` · ✅ ${t("checkout.proof_attached")}`}
+                </ReviewRow>
               </dl>
               <div className="flex items-end gap-2">
-                <Field label={t("checkout.coupon")} className="flex-1">{(a) => <Input {...a} value={coupon} onChange={(e) => setCoupon(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setApplied(coupon.trim()); } }} autoCapitalize="characters" />}</Field>
+                <Field label={`🏷️ ${t("checkout.coupon")}`} className="flex-1">
+                  {(a) => <Input {...a} value={coupon} onChange={(e) => setCoupon(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setApplied(coupon.trim()); } }} autoCapitalize="characters" />}
+                </Field>
                 <Button type="button" variant="secondary" onClick={() => setApplied(coupon.trim())}>{t("checkout.apply")}</Button>
               </div>
               {applied && <p className="m-0 text-sm text-muted">{t("checkout.coupon_applied", { code: applied })}</p>}
@@ -206,11 +344,12 @@ export default function CheckoutV2() {
         <aside aria-label={t("cart.summary")} className="hidden space-y-4 rounded-lg border border-line bg-surface p-4 md:sticky md:top-20 md:block">{totals}</aside>
       </form>
 
-      {/* Sticky total bar. Glass because it floats; the bottom nav is hidden on this route. */}
       <GlassPanel shape="dialog" className="fixed inset-x-3 z-30 flex items-center gap-2 p-2 pl-3 md:inset-x-auto md:right-8 md:w-[20rem]" style={{ bottom: "calc(12px + var(--safe-bottom))" }}>
         {step > 0 && <Button type="button" variant="secondary" aria-label={t("common.back")} leadingIcon={ChevronLeft} onClick={() => setStep(step - 1)} className="px-3" />}
         <div className="min-w-0 flex-1 text-ink"><p className="m-0 text-xs">{t("checkout.total")}</p><p className="m-0 truncate font-bold">{quote ? formatNpr(quote.total_paisa) : "…"}</p></div>
-        <Button type="submit" form="co" size="lg" loading={busy} disabled={!quote}>{step < 3 ? t("checkout.continue") : priceChanged ? t("checkout.confirm_new") : t("checkout.place")}</Button>
+        <Button type="submit" form="co" size="lg" loading={busy} disabled={!quote || proofUploading}>
+          {step < 3 ? t("checkout.continue") : priceChanged ? t("checkout.confirm_new") : t("checkout.place")}
+        </Button>
       </GlassPanel>
     </main>
   );

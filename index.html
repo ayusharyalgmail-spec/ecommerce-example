@@ -20,7 +20,7 @@
           var theme = localStorage.getItem("theme");
           if (theme === "light" || theme === "dark") d.setAttribute("data-theme", theme);
           var fx = localStorage.getItem("fx");
-          if (fx === "lite" || fx === "full") d.setAttribute("data-fx", fx);
+          d.setAttribute("data-fx", fx === "full" ? "full" : "lite");
           if (localStorage.getItem("lang") === "ne") {
             d.lang = "ne";
             var l = document.createElement("link");

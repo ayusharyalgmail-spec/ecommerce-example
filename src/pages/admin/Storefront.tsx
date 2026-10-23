@@ -1,3 +1,4 @@
+import { randomUUID } from "@/lib/uuid";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge, Button, Card, Field, Input, Trash2, toast } from "@/ui";
@@ -12,7 +13,7 @@ import { BrandPanel } from "@/admin/BrandPanel";
 type Row = Banner & { sort_order: number; is_active: boolean };
 
 async function upload(folder: "banners" | "categories", file: File) {
-  const path = `${folder}/${crypto.randomUUID()}.webp`;
+  const path = `${folder}/${randomUUID()}.webp`;
   const { error } = await supabase.storage.from("store-assets").upload(path, await toWebp(file, 1600), { contentType: "image/webp" });
   if (error) throw new Error(error.message);
   return path;

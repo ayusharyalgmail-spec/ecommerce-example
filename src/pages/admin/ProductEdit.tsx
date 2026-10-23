@@ -1,4 +1,3 @@
-import { toWebp, imageMeta } from "@/lib/image";
 import { useRef, useState } from "react";
 import { Star } from "@/ui";
 import { useNavigate, useParams } from "react-router-dom";
@@ -6,7 +5,7 @@ import { supabase, imageUrl } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
 import { paisaToRupees } from "@/lib/money";
 import { useQuery } from "@/lib/useQuery";
-import { addProductImage, adjustStock, deleteProductImage, saveProduct } from "@/lib/api";
+import { adjustStock, deleteProductImage, saveProduct, uploadProductImage } from "@/lib/api";
 import { ErrorBox, Loading, OkBox, useTitle } from "@/components/ui";
 
 type Img = { id: string; storage_path: string; is_primary: boolean; sort_order: number };
@@ -35,17 +34,10 @@ export default function ProductEdit() {
   const images = ([...(p?.product_images ?? [])] as Img[]).sort((a, b) => a.sort_order - b.sort_order);
 
   async function upload(f: File) {
-    setMsg(null);
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type) || f.size > 10 * 1024 * 1024) { setMsg({ ok: false, text: "JPEG/PNG/WebP only, max 10 MB" }); return; }
-    setBusy(true);
-    try {
-      const path = `products/${id}/${crypto.randomUUID()}.webp`;
-      const blob = await toWebp(f);
-      const up = await supabase.storage.from("product-images").upload(path, blob, { contentType: "image/webp" });
-      if (up.error) throw up.error;
-      const err = await addProductImage(id!, path, await imageMeta(blob));
-      if (err) setMsg({ ok: false, text: err }); else reload();
-    } catch (e) { setMsg({ ok: false, text: e instanceof Error ? e.message : t("err.UNKNOWN") }); }
+    setMsg(null); setBusy(true);
+    const r = await uploadProductImage(id, f);
+    if (r.ok) { setMsg({ ok: true, text: t("img.done") }); reload(); }
+    else { if (r.detail) console.warn("[image upload]", r.code, r.detail); setMsg({ ok: false, text: t(`img.${r.code}`) }); }
     setBusy(false);
   }
 
@@ -93,11 +85,11 @@ export default function ProductEdit() {
                 <li key={i.id} className="relative">
                   <img src={imageUrl(i.storage_path)!} alt="" className="h-24 w-24 rounded-lg object-cover" />
                   {i.is_primary && <span className="badge badge-ok absolute left-1 top-1" title={t("admin.primary_image")}><Star aria-label={t("admin.primary_image")} size={14} fill="currentColor" /></span>}
-                  <button className="badge badge-err absolute right-1 top-1" aria-label="Delete" onClick={async () => { await deleteProductImage(i.id, i.storage_path); reload(); }}>✕</button>
+                  <button className="badge badge-err absolute right-1 top-1" aria-label={t("cart.remove")} disabled={busy} onClick={async () => { const err = await deleteProductImage(i.id, i.storage_path, id); if (err) setMsg({ ok: false, text: t("img.op_failed") }); reload(); }}>✕</button>
                 </li>
               ))}
             </ul>
-            <input ref={file} type="file" accept="image/jpeg,image/png,image/webp" disabled={busy}
+            <input ref={file} type="file" accept="image/*" aria-label={t("admin.add_photo")} disabled={busy}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); if (file.current) file.current.value = ""; }} />
           </section>
           <section className="card space-y-3">

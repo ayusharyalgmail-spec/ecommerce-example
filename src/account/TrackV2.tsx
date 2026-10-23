@@ -1,3 +1,4 @@
+import { randomUUID } from "@/lib/uuid";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Badge, Button, buttonStyles, Check, CircleCheck, Clock, Download, Field, Input, MessageCircle, Package, Share2, Skeleton, Truck, X, House, type LucideIcon } from "@/ui";
@@ -28,7 +29,7 @@ function PaymentProof({ token, onDone }: { token: string; onDone: () => void }) 
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) { setMsg({ ok: false, text: t("pay.file_bad") }); return; }
     setBusy(true);
     try {
-      const path = `proofs/${crypto.randomUUID()}.webp`;
+      const path = `proofs/${randomUUID()}.webp`;
       const up = await supabase.storage.from("payment-proofs").upload(path, await toWebp(file), { contentType: "image/webp" });
       if (up.error) throw up.error;
       const { error } = await supabase.rpc("submit_payment_proof", { p_token: token, p_reference: ref || null, p_proof_path: path });
@@ -136,6 +137,7 @@ export default function TrackV2() {
         </section>
       ) : (
         <>
+          {sp.get("placed") && <Alert tone="success">{t("track.placed")}</Alert>}
           {search && <Alert tone="danger">{t("track.not_found")}</Alert>}
           <form className="space-y-3 rounded-lg border border-line bg-surface p-4" onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); nav(`/track?number=${encodeURIComponent(String(f.get("number")))}&phone=${encodeURIComponent(String(f.get("phone")))}`); }}>
             <Field label={t("track.number")} required>{(a) => <Input {...a} name="number" placeholder="ORD-100000" defaultValue={number} autoCapitalize="characters" />}</Field>

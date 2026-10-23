@@ -12,7 +12,7 @@ export default function AdminLayout() {
   // Hiding links is cosmetic only; the database re-checks every permission.
   const links: [string, string, string, boolean?][] = [
     ["/admin", t("admin.dashboard"), "orders.view", true], ["/admin/orders", t("admin.orders"), "orders.view"],
-    ["/admin/products", t("admin.products"), "products.view"], ["/admin/categories", t("admin.categories"), "products.manage"], ["/admin/reviews", t("admin.reviews"), "reviews.moderate"],
+    ["/admin/money", t("admin.money"), "orders.manage"], ["/admin/products", t("admin.products"), "products.view"], ["/admin/categories", t("admin.categories"), "products.manage"], ["/admin/reviews", t("admin.reviews"), "reviews.moderate"],
     ["/admin/coupons", t("admin.coupons"), "coupons.manage"], ["/admin/zones", t("admin.zones"), "delivery.manage"],
     ["/admin/reports", t("admin.reports"), "reports.view"], ["/admin/import", t("admin.csv"), "csv.manage"],
     ["/admin/staff", t("admin.staff"), "staff.manage"], ["/admin/audit", t("admin.audit"), "audit.view"],

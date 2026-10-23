@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import {
   Button, ChartColumn, ClipboardList, Ellipsis, ExternalLink, GlassPanel, History, IconButton, LayoutDashboard, Package, Palette, Settings,
-  Sheet, Star, Tag, Ticket, Truck, Upload, Users, cn, type LucideIcon,
+  Sheet, Star, Tag, Ticket, Truck, Upload, Users, Wallet, cn, type LucideIcon,
 } from "@/ui";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
@@ -21,6 +21,7 @@ function useAdminNav(): NavItem[] {
   const all: NavItem[] = [
     { to: "/admin", label: t("admin.dashboard"), perm: "orders.view", icon: LayoutDashboard, end: true },
     { to: "/admin/orders", label: t("admin.orders"), perm: "orders.view", icon: ClipboardList },
+    { to: "/admin/money", label: t("admin.money"), perm: "orders.manage", icon: Wallet },
     { to: "/admin/products", label: t("admin.products"), perm: "products.view", icon: Package },
     { to: "/admin/categories", label: t("admin.categories"), perm: "products.manage", icon: Tag },
     { to: "/admin/reviews", label: t("admin.reviews"), perm: "reviews.moderate", icon: Star },
@@ -77,7 +78,7 @@ export default function AdminShell() {
   const items = useAdminNav();
   const { data: store } = useStoreSettings();
   const [more, setMore] = useState(false);
-  const primary = ["/admin/orders", "/admin/products", "/admin/reports"].map((to) => items.find((i) => i.to === to)).filter((i): i is NavItem => !!i);
+  const primary = ["/admin/orders", "/admin/money", "/admin/products"].map((to) => items.find((i) => i.to === to)).filter((i): i is NavItem => !!i);
 
   return (
     <div className="min-h-dvh">

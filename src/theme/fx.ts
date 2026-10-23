@@ -1,6 +1,5 @@
 // Visual-effects tier (docs/ux-overhaul/DESIGN.md section 3.5). Applied as data-fx on <html>.
-// `connection.saveData` and `deviceMemory` are Chromium-only; other browsers get "full" and rely on
-// the CSS fallbacks (prefers-reduced-transparency, @supports, forced-colors).
+// Fresh installs start on Lite; Full is opt-in from Appearance and persisted in localStorage("fx").
 
 export type FxTier = "full" | "lite";
 export type FxPref = "auto" | FxTier;
@@ -13,13 +12,11 @@ type Env = {
   touch?: boolean;
 };
 
+/** Lite is the default for everyone (CLAUDE.md "Required UX defaults"); only a saved explicit choice of Full turns
+ * effects on. Device hints are kept in the signature so a future "auto" tier can use them without call-site changes. */
 export function chooseFx(env: Env): FxTier {
   if (env.pref === "full" || env.pref === "lite") return env.pref;
-  if (env.saveData) return "lite";
-  if (env.deviceMemory !== undefined && env.deviceMemory <= 2) return "lite";
-  // Touch phones and tablets with 4 GB or less, or 6 or fewer cores, drop frames with live backdrop blur: start them on Lite.
-  if (env.touch && ((env.deviceMemory !== undefined && env.deviceMemory <= 4) || (env.cores !== undefined && env.cores <= 6))) return "lite";
-  return "full";
+  return "lite";
 }
 
 type Nav = Navigator & { connection?: { saveData?: boolean }; deviceMemory?: number };

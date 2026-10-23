@@ -1,3 +1,4 @@
+import { randomUUID } from "@/lib/uuid";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/lib/cart";
@@ -37,7 +38,7 @@ export default function Checkout() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const lastTotal = useRef<number | null>(null);
-  const idem = useRef(crypto.randomUUID());
+  const idem = useRef(randomUUID());
   const seeded = useRef(false);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF((p) => ({ ...p, [k]: e.target.value }));
 
@@ -84,8 +85,8 @@ export default function Checkout() {
     setBusy(true); setError(null);
     const r = await placeOrder({ idempotencyKey: idem.current, items, zoneId, coupon: applied, paymentMethod: payment, ...f, locale });
     setBusy(false);
-    if (r.ok) { clear(); nav(`/track?token=${r.token}&new=1`, { replace: true }); }
-    else { setError(`err.${r.code}`); if (r.code !== "IDEMPOTENCY_CONFLICT") idem.current = crypto.randomUUID(); }
+    if (r.ok) { clear(); nav("token" in r ? `/track?token=${r.token}&new=1` : `/track?number=${encodeURIComponent(r.orderNumber)}&placed=1`, { replace: true }); }
+    else { setError(`err.${r.code}`); if (!r.retryable && r.code !== "IDEMPOTENCY_CONFLICT") idem.current = randomUUID(); }
   }
 
   if (!items.length) return <main className="container-page muted">{t("cart.empty")} <Link className="underline" to="/shop">{t("cart.continue")}</Link></main>;

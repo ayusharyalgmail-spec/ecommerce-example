@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { recordView } from "@/catalog/data";
 import { ImageOff, Rating } from "@/ui";
+import { ShareButton } from "@/components/ShareButton";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { useT, pick } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -41,7 +42,9 @@ export default function ProductPage() {
   type Img = { id: string; storage_path: string; alt_en: string | null; alt_ne: string | null; is_primary: boolean; sort_order: number };
   const images = ([...p.product_images] as Img[]).sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);
   const avg = p.review_count ? p.rating_sum / p.review_count : 0;
-  const shareText = encodeURIComponent(`${name} - ${formatNpr(p.discount_price_paisa ?? p.price_paisa)} ${window.location.href}`);
+  const href = window.location.origin + window.location.pathname;
+  const shareData = { title: name, text: `${name} - ${formatNpr(p.discount_price_paisa ?? p.price_paisa)}`, url: href };
+  const shareText = encodeURIComponent(`${name} ${href}`);
   const waNum = wa?.replace(/\D/g, "");
 
   return (
@@ -75,7 +78,7 @@ export default function ProductPage() {
         <AddToCart productId={p.id} available={available} withQty />
         <WishlistButton productId={p.id} initial={wished} />
         {waNum && <a className="btn btn-secondary w-full" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${waNum}?text=${shareText}`}>{t("common.contact")}</a>}
-        <a className="btn btn-secondary w-full" target="_blank" rel="noopener noreferrer" href={`https://wa.me/?text=${shareText}`}>{t("product.share")}</a>
+        <ShareButton data={shareData} trigger={<button type="button" className="btn btn-secondary w-full">{t("pdp.share")}</button>} />
         {desc && <p className="whitespace-pre-line pt-2">{desc}</p>}
       </div>
 
