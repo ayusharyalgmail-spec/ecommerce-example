@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, Button, buttonStyles, ChevronLeft, ChoiceCard, EmptyState, Field, GlassPanel, Input, ShoppingCart, Skeleton } from "@/ui";
+import { Alert, Button, buttonStyles, ChevronLeft, ChoiceCard, EmptyState, Field, GlassPanel, Input, LogIn, Select, ShoppingCart, Skeleton } from "@/ui";
+import { demoOn } from "@/catalog/demoMode";
 import { useCart } from "@/lib/cart";
 import { useT, pick } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -93,6 +94,7 @@ export default function CheckoutV2() {
   const itemsKey = JSON.stringify(items);
   useEffect(() => {
     if (!items.length || !zoneId) return;
+    if (import.meta.env.DEV && demoOn()) return; // demo ids are unknown to the server
     let off = false;
     void quoteCheckout(items, zoneId, applied).then((r) => {
       if (off) return;
@@ -178,13 +180,9 @@ export default function CheckoutV2() {
 
   // Login gate
   if (!user) return (
-    <main className={`${PAGE_X} py-16 text-center space-y-4`}>
-      <p className="text-4xl">🔒</p>
-      <h1 className="m-0 text-2xl font-bold">{t("checkout.login_required")}</h1>
-      <p className="text-muted">{t("checkout.login_desc")}</p>
-      <Link to={`/login?next=/checkout`} className={buttonStyles({ variant: "primary", size: "lg" })}>
-        {t("checkout.login_btn")}
-      </Link>
+    <main className={`${PAGE_X} page-in py-8`}>
+      <EmptyState icon={LogIn} title={t("checkout.login_required")} description={t("checkout.login_desc")}
+        action={<Link to={`/login?next=/checkout`} className={buttonStyles({ variant: "primary", size: "lg" })}>{t("checkout.login_btn")}</Link>} />
     </main>
   );
 
@@ -196,12 +194,14 @@ export default function CheckoutV2() {
   if (meta.isLoading) return <main className={`${PAGE_X} space-y-3 py-4`}><Skeleton variant="row" /><Skeleton variant="row" className="h-48" /></main>;
 
   const steps = [
-    `👤 ${t("checkout.step.contact")}`,
-    `📍 ${t("checkout.step.delivery")}`,
-    `💳 ${t("checkout.step.payment")}`,
-    `✅ ${t("checkout.step.review")}`,
+    t("checkout.step.contact"),
+    t("checkout.step.delivery"),
+    t("checkout.step.payment"),
+    t("checkout.step.review"),
   ];
   const zone = zones.find((z) => z.id === zoneId);
+  // Demo products exist only in the browser; the server would reject them, so ordering is switched off up front.
+  const demoMode = import.meta.env.DEV && demoOn();
   const instr = pick(locale, ps.instructions_en, ps.instructions_ne);
   const priceChanged = error === "checkout.price_changed";
 
@@ -217,12 +217,13 @@ export default function CheckoutV2() {
 
   return (
     <main className={`${PAGE_X} space-y-4 py-4 pb-40 md:pb-8`}>
-      <h1 className="m-0 text-3xl font-bold">{t("checkout.title")}</h1>
+      <h1 className="m-0 text-title font-bold">{t("checkout.title")}</h1>
+      {demoMode && <Alert tone="info">{t("demo.checkout")}</Alert>}
       <ol aria-label={t("checkout.progress")} className="m-0 grid list-none grid-cols-4 gap-2 p-0">
         {steps.map((s, i) => (
           <li key={s} aria-current={i === step ? "step" : undefined} className="space-y-1">
             <span aria-hidden className={`block h-1.5 rounded-pill ${i <= step ? "bg-brand-strong" : "bg-surface-2"}`} />
-            <span className={`block text-xs sm:text-sm ${i === step ? "font-bold text-ink" : "text-muted"}`}>{i + 1}. {s}</span>
+            <span className={`block text-xs sm:text-sm ${i === step ? "font-bold text-ink" : "text-muted"}`}><span className="tabular">{i + 1}.</span> {s}</span>
           </li>
         ))}
       </ol>
@@ -234,14 +235,14 @@ export default function CheckoutV2() {
 
           {step === 0 && (
             <section aria-labelledby="s0" className="space-y-3">
-              <h2 id="s0" className="m-0 text-xl font-bold">👤 {t("checkout.step.contact")}</h2>
-              <Field label={`📝 ${t("checkout.name")}`} required>
+              <h2 id="s0" className="m-0 text-section font-bold">{t("checkout.step.contact")}</h2>
+              <Field label={t("checkout.name")} required>
                 {(a) => <Input {...a} value={f.name} onChange={set("name")} minLength={2} autoComplete="name" enterKeyHint="next" placeholder={t("checkout.name_placeholder")} />}
               </Field>
-              <Field label={`📞 ${t("checkout.phone")}`} hint={t("checkout.phone_hint")} required>
+              <Field label={t("checkout.phone")} hint={t("checkout.phone_hint")} required>
                 {(a) => <Input {...a} value={f.phone} onChange={set("phone")} inputMode="tel" type="tel" pattern="^(\+?977)?9\d{9}$" autoComplete="tel" enterKeyHint="next" placeholder="98XXXXXXXX" />}
               </Field>
-              <Field label={`🔁 ${t("checkout.confirm_phone")}`} hint={t("checkout.confirm_phone_hint")} required>
+              <Field label={t("checkout.confirm_phone")} hint={t("checkout.confirm_phone_hint")} required>
                 {(a) => <Input {...a} value={f.confirmPhone} onChange={set("confirmPhone")} inputMode="tel" type="tel" autoComplete="tel" enterKeyHint="next" placeholder="98XXXXXXXX" />}
               </Field>
             </section>
@@ -249,31 +250,25 @@ export default function CheckoutV2() {
 
           {step === 1 && (
             <section aria-labelledby="s1" className="space-y-4">
-              <h2 id="s1" className="m-0 text-xl font-bold">📍 {t("checkout.step.delivery")}</h2>
+              <h2 id="s1" className="m-0 text-section font-bold">{t("checkout.step.delivery")}</h2>
               <div className="rounded-lg border border-line bg-surface-2 p-3 text-sm">
-                <p className="m-0 font-semibold">🏙️ {CITY} · {DISTRICT}</p>
+                <p className="m-0 font-semibold">{CITY}, {DISTRICT}</p>
                 <p className="m-0 text-muted">{t("checkout.city_note")}</p>
               </div>
-              <Field label={`🏘️ ${t("checkout.ward")}`} required>
+              <Field label={t("checkout.ward")} required>
                 {(a) => (
-                  <select
-                    {...a}
-                    value={f.ward}
-                    onChange={set("ward")}
-                    className="input w-full"
-                    required
-                  >
+                  <Select {...a} value={f.ward} onChange={set("ward")} required>
                     <option value="">{t("checkout.ward_pick")}</option>
                     {WARDS.map((w) => <option key={w} value={w}>{t("checkout.ward_n", { n: w })}</option>)}
-                  </select>
+                  </Select>
                 )}
               </Field>
-              <Field label={`🏠 ${t("checkout.street")}`} hint={t("checkout.street_hint")}>
+              <Field label={t("checkout.street")} hint={t("checkout.street_hint")}>
                 {(a) => <Input {...a} value={f.street} onChange={set("street")} enterKeyHint="done" placeholder={t("checkout.street_placeholder")} />}
               </Field>
               {zones.length > 1 && (
                 <fieldset className="m-0 min-w-0 space-y-2 border-0 p-0">
-                  <legend className="mb-1 p-0 text-sm font-semibold">🚚 {t("checkout.zone")}</legend>
+                  <legend className="mb-1 p-0 text-sm font-semibold">{t("checkout.zone")}</legend>
                   {zones.map((z) => <ChoiceCard key={z.id} name="zone" required checked={zoneId === z.id} onChange={() => setZoneId(z.id)} label={pick(locale, z.name_en, z.name_ne) ?? z.name_en} description={z.fee_paisa ? formatNpr(z.fee_paisa) : t("checkout.free")} />)}
                 </fieldset>
               )}
@@ -282,16 +277,16 @@ export default function CheckoutV2() {
 
           {step === 2 && (
             <section aria-labelledby="s2" className="space-y-3">
-              <h2 id="s2" className="m-0 text-xl font-bold">💳 {t("checkout.payment")}</h2>
+              <h2 id="s2" className="m-0 text-section font-bold">{t("checkout.payment")}</h2>
               <fieldset className="m-0 min-w-0 space-y-2 border-0 p-0">
                 <legend className="sr-only-text">{t("checkout.payment")}</legend>
-                {codEnabled && <ChoiceCard name="pay" checked={payment === "cod"} onChange={() => setPayment("cod")} label={`💵 ${t("checkout.cod")}`} description={t("checkout.cod_desc")} />}
-                {manualEnabled && <ChoiceCard name="pay" checked={payment === "manual"} onChange={() => setPayment("manual")} label={`📲 ${t("checkout.manual")}`} description={t("checkout.manual_desc")} />}
+                {codEnabled && <ChoiceCard name="pay" checked={payment === "cod"} onChange={() => setPayment("cod")} label={t("checkout.cod")} description={t("checkout.cod_desc")} />}
+                {manualEnabled && <ChoiceCard name="pay" checked={payment === "manual"} onChange={() => setPayment("manual")} label={t("checkout.manual")} description={t("checkout.manual_desc")} />}
               </fieldset>
 
               {payment === "manual" && (
-                <div className="space-y-3 rounded-lg border border-brand-soft bg-surface p-4">
-                  <p className="m-0 font-semibold">📸 {t("checkout.proof_title")}</p>
+                <div className="space-y-3 rounded-lg border border-line bg-surface p-4">
+                  <p className="m-0 font-semibold">{t("checkout.proof_title")}</p>
                   {instr && <p className="m-0 text-sm text-muted whitespace-pre-line">{instr}</p>}
                   <Alert tone="warning">{t("checkout.proof_required_note")}</Alert>
                   <Field label={t("checkout.proof_label")} hint={t("checkout.proof_hint")} required={payment === "manual"}>
@@ -305,9 +300,9 @@ export default function CheckoutV2() {
                       />
                     )}
                   </Field>
-                  {proofUploading && <p role="status" className="m-0 text-sm text-muted">⏳ {t("checkout.proof_uploading")}</p>}
-                  {proofPath && !proofUploading && <p role="status" className="m-0 text-sm text-success">✅ {t("checkout.proof_ready")}</p>}
-                  {proofFile && !proofPath && !proofUploading && <p className="m-0 text-sm text-danger">❌ {t("checkout.proof_failed")}</p>}
+                  {proofUploading && <p role="status" className="m-0 text-sm text-muted">{t("checkout.proof_uploading")}</p>}
+                  {proofPath && !proofUploading && <p role="status" className="m-0 text-sm text-success">{t("checkout.proof_ready")}</p>}
+                  {proofFile && !proofPath && !proofUploading && <p className="m-0 text-sm text-danger">{t("checkout.proof_failed")}</p>}
                 </div>
               )}
             </section>
@@ -315,22 +310,22 @@ export default function CheckoutV2() {
 
           {step === 3 && (
             <section aria-labelledby="s3" className="space-y-4">
-              <h2 id="s3" className="m-0 text-xl font-bold">✅ {t("checkout.step.review")}</h2>
+              <h2 id="s3" className="m-0 text-section font-bold">{t("checkout.step.review")}</h2>
               <dl className="m-0 space-y-3 rounded-lg border border-line bg-surface p-4">
-                <ReviewRow label={`👤 ${t("checkout.step.contact")}`} onEdit={() => setStep(0)} editLabel={t("checkout.edit")}>
+                <ReviewRow label={t("checkout.step.contact")} onEdit={() => setStep(0)} editLabel={t("checkout.edit")}>
                   {f.name} · {f.phone}
                 </ReviewRow>
-                <ReviewRow label={`📍 ${t("checkout.step.delivery")}`} onEdit={() => setStep(1)} editLabel={t("checkout.edit")}>
+                <ReviewRow label={t("checkout.step.delivery")} onEdit={() => setStep(1)} editLabel={t("checkout.edit")}>
                   {t("checkout.ward_n", { n: f.ward })}{f.street ? `, ${f.street}` : ""} · {CITY}
                   {zone ? ` · ${pick(locale, zone.name_en, zone.name_ne)}` : ""}
                 </ReviewRow>
-                <ReviewRow label={`💳 ${t("checkout.step.payment")}`} onEdit={() => setStep(2)} editLabel={t("checkout.edit")}>
-                  {payment === "cod" ? `💵 ${t("checkout.cod")}` : `📲 ${t("checkout.manual")}`}
-                  {payment === "manual" && proofPath && ` · ✅ ${t("checkout.proof_attached")}`}
+                <ReviewRow label={t("checkout.step.payment")} onEdit={() => setStep(2)} editLabel={t("checkout.edit")}>
+                  {payment === "cod" ? t("checkout.cod") : t("checkout.manual")}
+                  {payment === "manual" && proofPath && `, ${t("checkout.proof_attached")}`}
                 </ReviewRow>
               </dl>
               <div className="flex items-end gap-2">
-                <Field label={`🏷️ ${t("checkout.coupon")}`} className="flex-1">
+                <Field label={t("checkout.coupon")} className="flex-1">
                   {(a) => <Input {...a} value={coupon} onChange={(e) => setCoupon(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setApplied(coupon.trim()); } }} autoCapitalize="characters" />}
                 </Field>
                 <Button type="button" variant="secondary" onClick={() => setApplied(coupon.trim())}>{t("checkout.apply")}</Button>
@@ -344,10 +339,10 @@ export default function CheckoutV2() {
         <aside aria-label={t("cart.summary")} className="hidden space-y-4 rounded-lg border border-line bg-surface p-4 md:sticky md:top-20 md:block">{totals}</aside>
       </form>
 
-      <GlassPanel shape="dialog" className="fixed inset-x-3 z-30 flex items-center gap-2 p-2 pl-3 md:inset-x-auto md:right-8 md:w-[20rem]" style={{ bottom: "calc(12px + var(--safe-bottom))" }}>
+      <GlassPanel shape="dialog" className="fixed inset-x-3 z-30 flex items-center gap-2 p-2 pl-3 md:inset-x-auto md:right-8 md:w-[20rem]" style={{ bottom: "calc(8px + var(--safe-bottom))" }}>
         {step > 0 && <Button type="button" variant="secondary" aria-label={t("common.back")} leadingIcon={ChevronLeft} onClick={() => setStep(step - 1)} className="px-3" />}
         <div className="min-w-0 flex-1 text-ink"><p className="m-0 text-xs">{t("checkout.total")}</p><p className="m-0 truncate font-bold">{quote ? formatNpr(quote.total_paisa) : "…"}</p></div>
-        <Button type="submit" form="co" size="lg" loading={busy} disabled={!quote || proofUploading}>
+        <Button type="submit" form="co" size="lg" loading={busy} disabled={!quote || proofUploading || (demoMode && step === 3)}>
           {step < 3 ? t("checkout.continue") : priceChanged ? t("checkout.confirm_new") : t("checkout.place")}
         </Button>
       </GlassPanel>

@@ -16,22 +16,28 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  /* room for the floating bottom nav (64 px + gesture bar) on compact screens */
-  padding-bottom: calc(76px + var(--safe-bottom));
+  /* room for the docked bottom nav (64 px + gesture bar) on compact screens */
+  padding-bottom: calc(64px + var(--safe-bottom));
+  -webkit-font-smoothing: antialiased;
 }
 @media (min-width: 840px) { body { padding-bottom: 0; } }
 
-a { color: inherit; }
-h1, h2, h3, h4 { margin: 0; }
-
-/* Focus: a contrasting inner ring plus a brand outer ring, visible on every interactive element.
-   Marigold alone is only 2:1 on white, so the ink ring carries the contrast. */
-:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 5px var(--brand);
-  border-radius: inherit;
+/* Element defaults live in the base layer so Tailwind utilities (text-on-brand on a link, etc.) can override them. */
+@layer base {
+  a { color: inherit; }
+  h1, h2, h3, h4 { margin: 0; text-wrap: balance; }
 }
+/* Latin headings sit slightly tighter; Devanagari never gets letter-spacing (see below). */
+:lang(en) :is(h1, h2) { letter-spacing: -.012em; }
+.nums, .tabular { font-variant-numeric: tabular-nums; }
+
+/* Focus: a 2 px blue ring with a gap, visible on every interactive element (>= 3:1 on every surface, both themes). */
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+/* Programmatic focus targets (the page content after navigation) never show a ring. */
+[tabindex="-1"]:focus-visible { outline: none; }
 @media (forced-colors: active) {
   :where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible { outline: 2px solid Highlight; box-shadow: none; }
 }

@@ -20,7 +20,7 @@ export function IconLink({ to, icon: Icon, label, badge, variant, className, vie
     <Link to={to} aria-label={label} viewTransition={viewTransition} className={cn(iconButtonStyles({ variant }), className)}>
       <Icon aria-hidden size={24} strokeWidth={1.75} />
       {!!badge && (
-        <span aria-hidden className="absolute -right-0.5 -top-0.5 flex min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-on-accent" style={{ height: 20 }}>
+        <span aria-hidden className="absolute -right-0.5 -top-0.5 flex min-w-5 items-center justify-center rounded-full bg-brand px-1 text-xs font-semibold text-on-brand ring-2 ring-[var(--surface)]" style={{ height: 20 }}>
           {badge > 99 ? "99+" : badge}
         </span>
       )}

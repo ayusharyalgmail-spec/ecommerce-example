@@ -37,7 +37,7 @@ const CheckoutLegacy = lazy(() => import("@/pages/Checkout"));
 const CheckoutV2 = lazy(() => import("@/checkout/CheckoutV2"));
 const TrackLegacy = lazy(() => import("@/pages/Track"));
 const TrackV2 = lazy(() => import("@/account/TrackV2"));
-import Login from "@/pages/Login";
+const Login = lazy(() => import("@/pages/Login"));
 import AuthCallback from "@/pages/AuthCallback";
 const AccountLegacy = lazy(() => import("@/pages/Account"));
 const AccountV2 = lazy(() => import("@/account/AccountV2"));
@@ -145,7 +145,7 @@ const router = createBrowserRouter([
       { path: "/cart", element: <Routed v1={<CartLegacy />} v2={<CartV2 />} /> },
       { path: "/checkout", element: <Routed v1={<CheckoutLegacy />} v2={<CheckoutV2 />} /> },
       { path: "/track", element: <Routed v1={<TrackLegacy />} v2={<TrackV2 />} /> },
-      { path: "/login", element: <Login /> },
+      { path: "/login", element: lazyEl(<Login />) },
       { path: "/auth/callback", element: <AuthCallback /> },
       { path: "/account", element: <RequireAuth><Routed v1={<AccountLegacy />} v2={<AccountV2 />} /></RequireAuth> },
       { path: "/account/wishlist", element: <RequireAuth><Wishlist /></RequireAuth> },

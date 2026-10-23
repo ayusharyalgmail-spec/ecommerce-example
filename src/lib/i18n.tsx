@@ -8,6 +8,16 @@ type Dict = Record<string, string>;
 let neDict: Dict | null = null;
 const loadNe = () => import("@/messages/ne.json").then((m) => (neDict = m.default as Dict));
 
+// Strings used only by the shop dashboard live in their own chunk, so shoppers never download them.
+let adminEn: Dict | null = null;
+let adminNe: Dict | null = null;
+export const adminMessagesReady = () => adminEn !== null;
+export async function loadAdminMessages() {
+  if (adminEn) return;
+  const [e, n] = await Promise.all([import("@/messages/admin.en.json"), import("@/messages/admin.ne.json")]);
+  adminEn = e.default as Dict; adminNe = n.default as Dict;
+}
+
 type Ctx = {
   locale: Locale;
   setLocale: (l: Locale) => Promise<void>;
@@ -32,7 +42,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
   // Missing Nepali keys fall back to English; a missing key shows the key itself.
   const t = useCallback((key: string, vars?: Record<string, string | number>) => {
-    let s = (locale === "ne" ? neDict?.[key] : undefined) ?? (en as Dict)[key] ?? key;
+    let s = (locale === "ne" ? neDict?.[key] ?? adminNe?.[key] : undefined) ?? (en as Dict)[key] ?? adminEn?.[key] ?? key;
     if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, String(v));
     return s;
   }, [locale]);
@@ -40,6 +50,13 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   // Only on a cold start with a saved Nepali choice: wait for the dictionary (a few ms) instead of flashing English.
   if (locale === "ne" && neDict === null) return null;
   return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
+}
+
+/** For dashboard screens: true once the dashboard strings are loaded (immediately on later visits). */
+export function useAdminMessages() {
+  const [ready, setReady] = useState(adminMessagesReady);
+  useEffect(() => { if (!ready) void loadAdminMessages().then(() => setReady(true)); }, [ready]);
+  return ready;
 }
 
 export function useT() {

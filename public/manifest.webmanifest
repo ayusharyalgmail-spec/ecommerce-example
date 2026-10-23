@@ -3,8 +3,8 @@
   "short_name": "Store",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#7c3aed",
+  "background_color": "#FAF9F6",
+  "theme_color": "#20231F",
   "icons": [
     {
       "src": "/icon.svg",
@@ -22,7 +22,7 @@
   "id": "/",
   "lang": "en",
   "scope": "/",
-  "description": "Shop online with delivery across Nepal.",
+  "description": "Everyday essentials from your neighbourhood shop, delivered locally.",
   "orientation": "portrait",
   "categories": [
     "shopping"

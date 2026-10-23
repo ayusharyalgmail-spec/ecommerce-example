@@ -14,5 +14,8 @@ export function errorCode(message: string | undefined): string {
   return m ? m[1] : "UNKNOWN";
 }
 
+/** Dev-only: the demo catalogue's licensed Wikimedia photos are absolute URLs. Production only ever builds storage URLs. */
+export const isDemoPhoto = (path: string) => import.meta.env.DEV && /^https:\/\/(thumb|upload)\.wikimedia\.org\//.test(path);
+
 export const imageUrl = (path?: string | null) =>
-  path ? `${SUPABASE_URL}/storage/v1/object/public/product-images/${path}` : null;
+  !path ? null : isDemoPhoto(path) ? path : `${SUPABASE_URL}/storage/v1/object/public/product-images/${path}`;

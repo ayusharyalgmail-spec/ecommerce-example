@@ -47,3 +47,6 @@ next-env.d.ts
 /files (9)/
 
 /storybook-static
+
+# local browser QA artifacts
+.playwright-mcp/

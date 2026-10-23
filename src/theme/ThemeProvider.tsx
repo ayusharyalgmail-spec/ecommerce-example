@@ -10,14 +10,21 @@ type Ctx = {
   fxPref: FxPref;
   fx: FxTier;
   setFxPref: (p: FxPref) => void;
-  /** Vendor brand: pass the primary colour; null resets to the default marigold. */
+  /** Vendor brand: pass the primary colour; null resets to the default charcoal. */
   setBrandColor: (hex: string | null) => BrandResult | null;
 };
 const ThemeCtx = createContext<Ctx | null>(null);
 
-const readMode = (): ThemeMode => {
-  try { const v = localStorage.getItem("theme"); return v === "light" || v === "dark" ? v : "system"; } catch { return "system"; }
+/** Light is the default for first-time visitors; "system" is only used when the visitor chose it. */
+export const readMode = (): ThemeMode => {
+  try { const v = localStorage.getItem("theme"); return v === "dark" || v === "system" ? v : "light"; } catch { return "light"; }
 };
+
+/** Browser UI colour (Android status bar) follows the page background of the active theme. */
+function syncThemeColor() {
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+  if (bg) document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", bg));
+}
 
 export function ThemeProvider({ children, brandColor }: { children: React.ReactNode; brandColor?: string | null }) {
   const [mode, setModeState] = useState<ThemeMode>(readMode);
@@ -28,7 +35,8 @@ export function ThemeProvider({ children, brandColor }: { children: React.ReactN
     setModeState(m);
     const root = document.documentElement;
     if (m === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", m);
-    try { if (m === "system") localStorage.removeItem("theme"); else localStorage.setItem("theme", m); } catch { /* storage blocked */ }
+    try { localStorage.setItem("theme", m); } catch { /* storage blocked */ }
+    syncThemeColor();
   }, []);
 
   const setFxPref = useCallback((p: FxPref) => {
@@ -47,8 +55,6 @@ export function ThemeProvider({ children, brandColor }: { children: React.ReactN
     if (!result) { el?.remove(); return null; }
     if (!el) { el = document.createElement("style"); el.id = "brand-vars"; document.head.appendChild(el); }
     el.textContent = brandCss(result);
-    // keep the browser UI colour in step with the brand (Android status bar)
-    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", result.brand));
     return result;
   }, []);
 

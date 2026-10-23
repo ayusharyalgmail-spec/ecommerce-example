@@ -8,13 +8,13 @@ type CardProps = React.HTMLAttributes<HTMLDivElement> & {
   flush?: boolean;
 };
 
-/** Flat card: solid surface, one hairline border, no shadow stack. Never glass (DESIGN.md 3.3). */
+/** Surface card: white on the warm page, a hairline border and resting elevation; interactive cards lift on hover. */
 export const Card = forwardRef<HTMLDivElement, CardProps>(function Card({ interactive, flush, className, ...rest }, ref) {
   return (
     <div ref={ref} className={cn(
-      "rounded-lg border border-line bg-surface text-ink",
-      !flush && "p-4",
-      interactive && "transition-shadow hover-fine:hover:shadow-[var(--e2)]",
+      "rounded-lg border border-line bg-surface text-ink shadow-[var(--e1)]",
+      !flush && "p-5",
+      interactive && "transition-[box-shadow,transform] duration-[var(--duration-2)] hover-fine:hover:-translate-y-0.5 hover-fine:hover:shadow-[var(--e2)]",
       className
     )} {...rest} />
   );

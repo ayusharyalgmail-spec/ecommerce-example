@@ -39,7 +39,7 @@ export const ChoiceCard = forwardRef<HTMLInputElement, ChoiceProps>(function Cho
 type SwitchProps = {
   checked: boolean;
   onCheckedChange: (v: boolean) => void;
-  label: string;
+  label: React.ReactNode;
   disabled?: boolean;
   className?: string;
 };
@@ -50,8 +50,8 @@ export function Switch({ checked, onCheckedChange, label, disabled, className }:
     <button type="button" role="switch" aria-checked={checked} disabled={disabled} onClick={() => onCheckedChange(!checked)}
       className={cn("flex min-h-12 w-full items-center justify-between gap-3 text-left disabled:opacity-60", className)}>
       <span className="font-medium text-ink">{label}</span>
-      <span aria-hidden className={cn("relative h-7 w-12 shrink-0 rounded-full border transition-colors duration-[var(--duration-2)]", checked ? "border-brand-strong bg-brand" : "border-line-strong bg-surface-2")}>
-        <span className={cn("absolute top-0.5 size-5 rounded-full bg-ink transition-transform duration-[var(--duration-2)]", checked ? "translate-x-[1.375rem]" : "translate-x-0.5")} />
+      <span aria-hidden className={cn("relative h-7 w-12 shrink-0 rounded-full border transition-colors duration-[var(--duration-2)]", checked ? "border-success bg-success" : "border-line-strong bg-surface-2")}>
+        <span className={cn("absolute top-[3px] size-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] transition-transform duration-[var(--duration-2)] ease-[var(--ease-out)]", checked ? "translate-x-[1.375rem]" : "translate-x-[3px]")} />
       </span>
     </button>
   );

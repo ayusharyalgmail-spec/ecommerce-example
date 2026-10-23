@@ -31,18 +31,4 @@
 /* Fallback 4: the Lite effects tier (Data Saver, low memory, user choice). */
 [data-fx="lite"] .glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--glass-bg-solid); }
 
-/* Ambient mesh that gives glass something to blur. One static background, no animation, no canvas. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(60rem 40rem at 8% -8%, var(--mesh-a), transparent 60%),
-    radial-gradient(50rem 36rem at 100% 10%, var(--mesh-b), transparent 60%),
-    radial-gradient(60rem 44rem at 40% 110%, var(--mesh-c), transparent 60%);
-}
-[data-fx="lite"] body::before { background: var(--bg); }
-@media (prefers-reduced-transparency: reduce) { body::before { background: var(--bg); } }
-@media (forced-colors: active) { body::before { display: none; } }
+/* No ambient background art: the page is a calm solid surface (Fresh Market). */

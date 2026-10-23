@@ -1,9 +1,15 @@
 // Catalogue data for the v2 storefront (Phase 3). Public, RLS-protected reads only; nothing here is cached
 // beyond TanStack Query memory (D-010: no private or API responses in the service worker).
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { supabase, SUPABASE_URL } from "@/lib/supabase";
+import { isDemoPhoto, supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { CARD_COLUMNS, type CardProduct } from "@/components/Product";
+import { demoOn } from "./demoMode";
+
+/** The dev-only demo catalogue, or null. In production the condition folds to false and the chunk is not built. */
+export async function demo() {
+  return import.meta.env.DEV && demoOn() ? await import("./demo") : null;
+}
 
 const TEN_MIN = 10 * 60_000;
 const FIVE_MIN = 5 * 60_000;
@@ -16,12 +22,13 @@ export type Banner = {
 export const BANNER_COLUMNS = "id,title_en,title_ne,subtitle_en,subtitle_ne,cta_label_en,cta_label_ne,link_url,image_path,image_alt_en,image_alt_ne";
 
 /** Public URL of artwork in the store-assets bucket (banners/..., categories/...). */
-export const assetUrl = (path?: string | null) => (path ? `${SUPABASE_URL}/storage/v1/object/public/store-assets/${path}` : null);
+export const assetUrl = (path?: string | null) => (!path ? null : isDemoPhoto(path) ? path : `${SUPABASE_URL}/storage/v1/object/public/store-assets/${path}`);
 
 export function useBanners() {
   return useQuery({
     queryKey: ["banners"], staleTime: FIVE_MIN,
     queryFn: async (): Promise<Banner[]> => {
+      if (await demo()) return [];
       const { data, error } = await supabase.from("banners").select(BANNER_COLUMNS).order("sort_order").limit(6);
       if (error) throw new Error(error.message);
       return (data ?? []) as Banner[];
@@ -34,6 +41,8 @@ export function useCategoryArt() {
   return useQuery({
     queryKey: ["categories", "art"], staleTime: TEN_MIN,
     queryFn: async (): Promise<CategoryArt[]> => {
+      const dm = await demo();
+      if (dm) return dm.categories;
       const { data, error } = await supabase.from("categories").select("id,slug,name_en,name_ne,image_path").eq("is_active", true).order("sort_order");
       if (error) throw new Error(error.message);
       return data ?? [];
@@ -46,6 +55,8 @@ export function useRail(rail: Rail) {
   return useQuery({
     queryKey: ["rail", rail], staleTime: FIVE_MIN,
     queryFn: async (): Promise<CardProduct[]> => {
+      const dm = await demo();
+      if (dm) return dm.rail(rail);
       let q = supabase.from("products").select(CARD_COLUMNS).eq("status", "published");
       if (rail === "deals") q = q.not("discount_price_paisa", "is", null).order("published_at", { ascending: false });
       else if (rail === "best") q = q.gt("units_sold", 0).order("units_sold", { ascending: false });
@@ -72,6 +83,8 @@ export function useRecentlyViewed() {
     queryFn: async (): Promise<CardProduct[]> => {
       const ids = read("rv").slice(0, 10);
       if (!ids.length) return [];
+      const dm = await demo();
+      if (dm) return dm.byIds(ids);
       const { data, error } = await supabase.from("products").select(CARD_COLUMNS).eq("status", "published").in("id", ids);
       if (error) throw new Error(error.message);
       const byId = new Map((data ?? []).map((p) => [(p as unknown as CardProduct).id, p as unknown as CardProduct]));
@@ -88,6 +101,8 @@ export const PAGE = 12;
 const clean = (s: string) => s.trim().replace(/[%,()*\\]/g, " ").replace(/\s+/g, " ");
 
 export async function fetchShopPage(f: ShopFilters, categoryId: string | null, page: number) {
+  const dm = await demo();
+  if (dm) return dm.shopPage(f, categoryId, page, PAGE);
   let q = supabase.from("products").select(CARD_COLUMNS, { count: "exact" }).eq("status", "published");
   if (categoryId) q = q.eq("category_id", categoryId);
   const term = clean(f.q);
@@ -97,7 +112,8 @@ export async function fetchShopPage(f: ShopFilters, categoryId: string | null, p
   if (f.sale) q = q.not("discount_price_paisa", "is", null);
   if (f.stock) q = q.gt("stock_quantity", 0);
   q = f.sort === "price_asc" ? q.order("price_paisa") : f.sort === "price_desc" ? q.order("price_paisa", { ascending: false })
-    : f.sort === "best" ? q.order("units_sold", { ascending: false }) : q.order("published_at", { ascending: false });
+    : f.sort === "best" ? q.order("units_sold", { ascending: false }) : f.sort === "name" ? q.order("name_en")
+    : q.order("published_at", { ascending: false });
   const { data, count, error } = await q.range((page - 1) * PAGE, page * PAGE - 1);
   if (error) throw new Error(error.message);
   return { products: (data ?? []) as unknown as CardProduct[], count: count ?? 0 };
@@ -125,6 +141,8 @@ export function useSuggestions(term: string) {
   return useQuery({
     queryKey: ["suggest", t], enabled: t.length >= 2, staleTime: 60_000,
     queryFn: async (): Promise<{ slug: string; name_en: string; name_ne: string | null }[]> => {
+      const dm = await demo();
+      if (dm) return dm.suggest(t);
       const { data, error } = await supabase.from("products").select("slug,name_en,name_ne").eq("status", "published")
         .or(`name_en.ilike.%${t}%,name_ne.ilike.%${t}%`).limit(6);
       if (error) throw new Error(error.message);
@@ -137,7 +155,7 @@ export function useSuggestions(term: string) {
 export function useWishIds() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["wish-ids", user?.id ?? null], enabled: !!user, staleTime: 60_000,
+    queryKey: ["wish-ids", user?.id ?? null], enabled: !!user && !(import.meta.env.DEV && demoOn()), staleTime: 60_000,
     queryFn: async (): Promise<Set<string>> => {
       const { data } = await supabase.from("wishlists").select("product_id").eq("user_id", user!.id);
       return new Set((data ?? []).map((r) => r.product_id as string));

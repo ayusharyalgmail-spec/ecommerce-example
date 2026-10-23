@@ -1,6 +1,6 @@
-/* Bazaar Glass design tokens (docs/ux-overhaul/DESIGN.md section 2.4).
-   Phase 0 contrast amendments applied: --line-strong, --brand-strong, --glacier-text, tint opacity 8%,
-   see docs/ux-overhaul/baseline/contrast.md. All values re-verified by scripts/contrast.mjs. */
+/* Design tokens. Warm-white foundation, charcoal primary actions, coral as the brand accent, mint for freshness and stock,
+   and a small set of soft tints for categories and dashboard widgets. Light is the default; dark is tuned separately.
+   Every pair that matters is verified by scripts/contrast.mjs (npm run contrast). */
 
 @theme {
   /* Breakpoints follow Material window size classes: compact / medium / expanded */
@@ -11,20 +11,30 @@
 
   --font-sans: "Mukta", "Segoe UI Variable Text", "Segoe UI", Roboto, system-ui, sans-serif;
 
-  --radius-xs: .375rem;   /* chips inside dense UI */
-  --radius-sm: .5rem;     /* inputs */
+  /* Type scale. Display and titles are tight; body copy keeps generous leading (base.css). */
+  --text-display: 2.5rem;    --text-display--line-height: 1.06;
+  --text-title: 1.875rem;    --text-title--line-height: 1.15;
+  --text-section: 1.375rem;  --text-section--line-height: 1.25;
+  --text-price: 1.125rem;    --text-price--line-height: 1.25;
+  --text-metric: 2rem;       --text-metric--line-height: 1.1;
+
+  /* Shape scale: each step has one job (controls < buttons < cards < feature panels). */
+  --radius-xs: .5rem;     /* chips, tags, thumbnails in dense rows */
+  --radius-sm: .625rem;   /* inputs, small controls */
   --radius-md: .75rem;    /* buttons */
-  --radius-lg: 1rem;      /* cards */
-  --radius-xl: 1.5rem;    /* sheets, hero */
+  --radius-lg: 1.25rem;   /* product cards, dashboard widgets */
+  --radius-xl: 1.75rem;   /* feature panels, hero, sheets */
+  --radius-2xl: 2rem;     /* promotional panels */
   --radius-pill: 999px;
 
   --shadow-e1: var(--e1);
   --shadow-e2: var(--e2);
+  --shadow-e3: var(--e3);
 
   --ease-out: cubic-bezier(.2, .8, .2, 1);
   --duration-1: 120ms;
   --duration-2: 200ms;
-  --duration-3: 320ms;
+  --duration-3: 280ms;
 }
 
 /* Colours are runtime variables (theme + brand change them), exposed to Tailwind with `inline`. */
@@ -42,6 +52,15 @@
   --color-on-brand: var(--on-brand);
   --color-on-accent: var(--on-accent);
   --color-accent: var(--accent);
+  --color-accent-tint: var(--accent-tint);
+  --color-accent-fill: var(--accent-fill);
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+  --color-sky-soft: var(--sky-soft);
+  --color-butter-soft: var(--butter-soft);
+  --color-rose-soft: var(--rose-soft);
+  --color-peach-soft: var(--peach-soft);
+  --color-well: var(--well);
   --color-glacier: var(--glacier);
   --color-glacier-text: var(--glacier-text);
   --color-success: var(--success);
@@ -62,77 +81,86 @@
 
 :root {
   color-scheme: light;
-  --ink: #15173A; --bg: #F7F6FB; --surface: #FFFFFF; --surface-2: #EEEDF6;
-  --text-muted: #555A7D; --line: #DAD9E8; --line-strong: #8D8DA4;
-  --brand: #F5A524; --brand-strong: #BE822A; --on-brand: #15173A; --on-danger: #FFFFFF; --on-accent: #FFFFFF;
-  --accent: #D1244F; --glacier: #2FB5A3; --glacier-text: #278281;
-  --success: #0E7C4A; --warning: #B45309; --danger: #C21F3A; --info: #2457D6;
+  --ink: #20231F; --bg: #FAF9F6; --surface: #FFFFFF; --surface-2: #F3F2EE;
+  --text-muted: #6A6F69; --line: #E9E9E3; --line-strong: #8A8E87;
+  --brand: #20231F; --brand-strong: #20231F; --on-brand: #FFFFFF; --on-danger: #FFFFFF; --on-accent: #FFFFFF;
+  --accent: #B8411F; --glacier: #1A64C8; --glacier-text: #1A64C8;
+  --success: #1F7A52; --warning: #9A5B00; --danger: #B42318; --info: #1A64C8;
 
-  --brand-hover: color-mix(in oklab, var(--brand) 92%, var(--ink));
-  --brand-press: color-mix(in oklab, var(--brand) 84%, var(--ink));
-  --brand-tint: color-mix(in oklab, var(--brand) 14%, var(--surface));
-  /* Status tints are 8% (Phase 0: 12% failed 4.5:1 for success, warning and accent text). */
+  /* Decorative fills (never carry text below 3:1): the bright coral, mint and the soft tints. */
+  --accent-fill: #FF7A59;
+  --mint: #2FB37A;
+  --mint-soft: #E3F4EA; --sky-soft: #E6EFFC; --butter-soft: #FBF1D6; --rose-soft: #FBE7E4; --peach-soft: #FDEBDD;
+  --well: #F1F0EB; /* product image well */
+  --focus: #1A64C8;  /* keyboard focus ring: blue reads as "focus" on charcoal, coral and white alike */
+
+  --brand-hover: color-mix(in oklab, var(--brand) 86%, white);
+  --brand-press: color-mix(in oklab, var(--brand) 78%, white);
+  --brand-tint: #EFEEE9;
+  /* Status tints are 8% so status text keeps 4.5:1 on its own chip. */
   --success-tint: color-mix(in oklab, var(--success) 8%, var(--surface));
   --warning-tint: color-mix(in oklab, var(--warning) 8%, var(--surface));
   --danger-tint: color-mix(in oklab, var(--danger) 8%, var(--surface));
   --info-tint: color-mix(in oklab, var(--info) 8%, var(--surface));
   --accent-tint: color-mix(in oklab, var(--accent) 8%, var(--surface));
 
-  /* Elevation (flat layer) */
-  --e1: 0 1px 2px rgba(21, 23, 58, .06);
-  --e2: 0 4px 12px rgba(21, 23, 58, .08);
+  /* Layered elevation, tinted to the warm ink (never pure black). e1 rest, e2 hover/lifted, e3 overlays. */
+  --e1: 0 1px 1px rgba(32, 35, 31, .03), 0 2px 6px -2px rgba(32, 35, 31, .07);
+  --e2: 0 2px 4px rgba(32, 35, 31, .04), 0 14px 32px -12px rgba(32, 35, 31, .18);
+  --e3: 0 4px 10px rgba(32, 35, 31, .05), 0 28px 64px -18px rgba(32, 35, 31, .28);
 
-  /* Glass (floating layer). Alphas follow the Phase 0 contrast result (see glass.css). */
-  --glass-bg: rgba(255, 255, 255, .84);
-  --glass-bg-solid: rgba(255, 255, 255, .94);
-  --glass-border: rgba(255, 255, 255, .55);
+  /* Floating layer (sheets, dialogs, sticky bars). Opaque enough that ink always reads. */
+  --glass-bg: rgba(255, 255, 255, .9);
+  --glass-bg-solid: rgba(255, 255, 255, .97);
+  --glass-border: rgba(32, 35, 31, .07);
   --glass-highlight: rgba(255, 255, 255, .7);
-  --glass-shadow: 0 8px 32px rgba(21, 23, 58, .14);
-  --glass-blur: 18px;
-
-  /* Ambient mesh behind the shell */
-  --mesh-a: rgba(245, 165, 36, .12);
-  --mesh-b: rgba(209, 36, 79, .08);
-  --mesh-c: rgba(36, 40, 140, .10);
+  --glass-shadow: var(--e3);
+  --glass-blur: 16px;
 
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Dark values live once, in a mixin-free way: the explicit attribute and the system preference share them. */
+/* Dark values live once: the explicit attribute and the "system" preference share them. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ink: #F2F3FF; --bg: #0E1030; --surface: #181B45; --surface-2: #222657;
-  --text-muted: #B4B8DC; --line: #2E3266; --line-strong: #64678E;
-  --brand-strong: #F5A524; --on-danger: #15173A; --on-accent: #15173A;
-  --accent: #FF5C82; --glacier: #52D4C2; --glacier-text: #52D4C2;
-  --success: #34D399; --warning: #FBBF24; --danger: #F87171; --info: #7FA6FF;
-  --e1: 0 1px 2px rgba(0, 0, 0, .4); --e2: 0 4px 12px rgba(0, 0, 0, .45);
-  --glass-bg: rgba(24, 27, 69, .72);
-  --glass-bg-solid: rgba(24, 27, 69, .96);
-  --glass-border: rgba(255, 255, 255, .12);
-  --glass-highlight: rgba(255, 255, 255, .08);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, .5);
-  --mesh-a: rgba(245, 165, 36, .22);
-  --mesh-b: rgba(255, 92, 130, .16);
-  --mesh-c: rgba(80, 90, 255, .26);
+  --ink: #F2F1EC; --bg: #121311; --surface: #1B1C1A; --surface-2: #252623;
+  --text-muted: #A8ABA4; --line: #2F302D; --line-strong: #6F736C;
+  --brand: #F2F1EC; --brand-strong: #F2F1EC; --on-brand: #151614; --on-danger: #3B0A06; --on-accent: #1F0E08;
+  --accent: #FF8A6B; --glacier: #8AB8FF; --glacier-text: #8AB8FF;
+  --success: #7FD6A8; --warning: #F0C36A; --danger: #FFB4A6; --info: #8AB8FF;
+  --accent-fill: #FF8A6B; --mint: #5BCB95;
+  --mint-soft: #1D2E25; --sky-soft: #1C2636; --butter-soft: #302A1A; --rose-soft: #33201D; --peach-soft: #33241B;
+  --well: #232421;
+  --focus: #8AB8FF;
+  --brand-tint: #2A2B28;
+  --e1: 0 1px 1px rgba(0, 0, 0, .3), 0 2px 6px -2px rgba(0, 0, 0, .4);
+  --e2: 0 2px 4px rgba(0, 0, 0, .3), 0 16px 36px -12px rgba(0, 0, 0, .6);
+  --e3: 0 4px 10px rgba(0, 0, 0, .35), 0 30px 70px -18px rgba(0, 0, 0, .7);
+  --glass-bg: rgba(27, 28, 26, .9);
+  --glass-bg-solid: rgba(27, 28, 26, .97);
+  --glass-border: rgba(242, 241, 236, .08);
+  --glass-highlight: rgba(255, 255, 255, .04);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
-    --ink: #F2F3FF; --bg: #0E1030; --surface: #181B45; --surface-2: #222657;
-    --text-muted: #B4B8DC; --line: #2E3266; --line-strong: #64678E;
-    --brand-strong: #F5A524; --on-danger: #15173A; --on-accent: #15173A;
-    --accent: #FF5C82; --glacier: #52D4C2; --glacier-text: #52D4C2;
-    --success: #34D399; --warning: #FBBF24; --danger: #F87171; --info: #7FA6FF;
-    --e1: 0 1px 2px rgba(0, 0, 0, .4); --e2: 0 4px 12px rgba(0, 0, 0, .45);
-    --glass-bg: rgba(24, 27, 69, .72);
-    --glass-bg-solid: rgba(24, 27, 69, .96);
-    --glass-border: rgba(255, 255, 255, .12);
-    --glass-highlight: rgba(255, 255, 255, .08);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, .5);
-    --mesh-a: rgba(245, 165, 36, .22);
-    --mesh-b: rgba(255, 92, 130, .16);
-    --mesh-c: rgba(80, 90, 255, .26);
+    --ink: #F2F1EC; --bg: #121311; --surface: #1B1C1A; --surface-2: #252623;
+    --text-muted: #A8ABA4; --line: #2F302D; --line-strong: #6F736C;
+    --brand: #F2F1EC; --brand-strong: #F2F1EC; --on-brand: #151614; --on-danger: #3B0A06; --on-accent: #1F0E08;
+    --accent: #FF8A6B; --glacier: #8AB8FF; --glacier-text: #8AB8FF;
+    --success: #7FD6A8; --warning: #F0C36A; --danger: #FFB4A6; --info: #8AB8FF;
+    --accent-fill: #FF8A6B; --mint: #5BCB95;
+    --mint-soft: #1D2E25; --sky-soft: #1C2636; --butter-soft: #302A1A; --rose-soft: #33201D; --peach-soft: #33241B;
+    --well: #232421;
+    --focus: #8AB8FF;
+    --brand-tint: #2A2B28;
+    --e1: 0 1px 1px rgba(0, 0, 0, .3), 0 2px 6px -2px rgba(0, 0, 0, .4);
+    --e2: 0 2px 4px rgba(0, 0, 0, .3), 0 16px 36px -12px rgba(0, 0, 0, .6);
+    --e3: 0 4px 10px rgba(0, 0, 0, .35), 0 30px 70px -18px rgba(0, 0, 0, .7);
+    --glass-bg: rgba(27, 28, 26, .9);
+    --glass-bg-solid: rgba(27, 28, 26, .97);
+    --glass-border: rgba(242, 241, 236, .08);
+    --glass-highlight: rgba(255, 255, 255, .04);
   }
 }
 

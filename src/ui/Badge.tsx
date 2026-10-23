@@ -10,6 +10,8 @@ const badgeStyles = cva("inline-flex items-center gap-1 rounded-pill px-2.5 py-0
       warning: "bg-[var(--warning-tint)] text-warning",
       danger: "bg-[var(--danger-tint)] text-danger",
       info: "bg-[var(--info-tint)] text-info",
+      accent: "bg-[var(--accent-tint)] text-accent",
+      brand: "bg-brand-tint text-brand-strong",
     },
   },
   defaultVariants: { tone: "neutral" },

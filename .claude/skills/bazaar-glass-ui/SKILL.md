@@ -7,6 +7,9 @@ description: Build or change UI in this repo's "Bazaar Glass" design system (gla
 
 Read `docs/ux-overhaul/DESIGN.md` for the full spec. This skill is the checklist that keeps every change consistent.
 
+> **Palette update (2026-10):** warm-white page `#FAF9F6`, white surfaces, charcoal ink `#20231F` and charcoal primary actions (`brand`), coral `accent` for the brand accent and sale tags, `mint` for freshness and stock, soft tints (`mint-soft`, `peach-soft`, `sky-soft`, `butter-soft`, `rose-soft`) for category tiles and dashboard widgets, `well` behind product photos, and a blue `--focus` ring. Shapes: controls 10 px, buttons 12 px, cards 20 px, panels 28-32 px; layered shadows `e1`/`e2`/`e3`. Light is the default theme. Header and bottom bars are solid; no background mesh. Anything below that mentions marigold, indigo or the mesh is historical; token names are unchanged.
+> Dashboard-only strings live in `src/messages/admin.{en,ne}.json` (lazy); `npm run i18n` checks both sets.
+
 ## 1. Golden rule
 **If it scrolls with the content, it is flat. If it floats above content, it may be glass.**
 
@@ -18,7 +21,7 @@ Rules: max 3 glass surfaces visible at once; never nest glass; never animate blu
 
 ## 2. Tokens (`src/styles/tokens.css`)
 - Colours: `ink, page(bg), surface, surface-2, muted, line, line-strong, brand, brand-strong, on-brand, accent, glacier, glacier-text, success, warning, danger, info`. Use the Tailwind utilities (`bg-surface`, `text-muted`, `border-line-strong`, `bg-brand text-on-brand`).
-- Marigold `brand` is a **fill** (ink text on it passes 8:1). For strokes, indicators or focus use `brand-strong` or ink: raw marigold is 2:1 on white.
+- `brand` (charcoal) is the primary-action fill with `on-brand` text; `accent` (coral) is for one promotional action or the sale tag per surface; `soft` buttons (`brand-tint` fill) are for actions that repeat in grids. Focus uses `--focus` (blue), never colour alone.
 - `glacier` is for fills/icons; for text use `glacier-text`.
 - Inputs use `line-strong` (3:1). `line` is decorative only.
 - Radius hierarchy (do not use one radius everywhere): chips `xs`, inputs `sm`, buttons `md`, cards `lg`, sheets/hero `xl`, badges/avatars `pill`.

@@ -2,10 +2,10 @@
 // Given a vendor's primary colour it picks readable text for buttons, derives a stroke colour that is
 // perceivable on both backgrounds, and warns when the colour cannot be made accessible without a change.
 
-export const INK = "#15173A";
+export const INK = "#20231F";
 export const WHITE = "#FFFFFF";
-const LIGHT_SURFACES = ["#FFFFFF", "#F7F6FB"];
-const DARK_SURFACES = ["#181B45", "#0E1030"];
+const LIGHT_SURFACES = ["#FFFFFF", "#FAF9F6"];
+const DARK_SURFACES = ["#1B1C1A", "#121311"];
 
 export type Rgb = [number, number, number];
 

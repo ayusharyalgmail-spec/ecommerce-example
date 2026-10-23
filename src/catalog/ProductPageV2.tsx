@@ -1,24 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Badge, Button, buttonStyles, ChevronLeft, ChevronRight, Dialog, EmptyState, GlassPanel, Heart, IconButton, ImageOff, MessageCircle, Minus, Plus, Rating, Share2, ShoppingCart, Skeleton, Truck, toast } from "@/ui";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Badge, Banknote, Button, buttonStyles, ChevronLeft, ChevronRight, Dialog, EmptyState, GlassPanel, Heart, IconButton, ImageOff, MessageCircle, QtyStepper, Rating, Share2, ShoppingCart, Skeleton, Truck, toast } from "@/ui";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { useT, pick } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
-import { useCategories } from "@/lib/queries";
+import { useCategories, useServiceInfo } from "@/lib/queries";
 import { ShareButton } from "@/components/ShareButton";
 import { formatNpr } from "@/lib/money";
 import { toggleWishlist } from "@/lib/api";
 import { useTitle } from "@/components/ui";
 import { CARD_COLUMNS, type CardProduct } from "@/components/Product";
-import { recordView } from "./data";
-import { CardGrid, ProductCardV2 } from "./ProductCardV2";
+import { demo, recordView } from "./data";
+import { demoOn } from "./demoMode";
+import { CardGrid, ProductCardV2, ProductFallback } from "./ProductCardV2";
 import { PAGE_X } from "./layout";
 
 type Img = { id: string; storage_path: string; alt_en: string | null; alt_ne: string | null; is_primary: boolean; sort_order: number; width: number | null; height: number | null; blur_color: string | null };
 
-function Gallery({ images, name, locale }: { images: Img[]; name: string; locale: "en" | "ne" }) {
+function Gallery({ images, name, locale, categoryId }: { images: Img[]; name: string; locale: "en" | "ne"; categoryId?: string | null }) {
   const { t } = useT();
   const track = useRef<HTMLUListElement>(null);
   const [i, setI] = useState(0);
@@ -37,7 +38,7 @@ function Gallery({ images, name, locale }: { images: Img[]; name: string; locale
     return () => window.removeEventListener("keydown", key);
   });
   const alt = (m: Img) => pick(locale, m.alt_en, m.alt_ne) || name;
-  if (!images.length) return <div className="flex aspect-square items-center justify-center rounded-xl bg-surface-2 text-muted"><ImageOff aria-hidden size={56} strokeWidth={1.25} /></div>;
+  if (!images.length) return <div className="aspect-square overflow-hidden rounded-xl bg-surface-2"><ProductFallback categoryId={categoryId} size={88} /></div>;
   return (
     <div className="space-y-3">
       <div className="relative">
@@ -126,10 +127,14 @@ export default function ProductPageV2() {
   const cats = useCategories().data;
   const [qty, setQty] = useState(1);
   const [wish, setWish] = useState<boolean | null>(null);
+  const service = useServiceInfo().data;
+  const nav = useNavigate();
 
   const q = useQuery({
     queryKey: ["pdp", slug, user?.id ?? null], staleTime: 60_000,
     queryFn: async () => {
+      const dm = await demo();
+      if (dm) return dm.productPage(slug!);
       const { data: p } = await supabase.from("products")
         .select("*, product_images(id,storage_path,alt_en,alt_ne,is_primary,sort_order,width,height,blur_color)").eq("slug", slug!).eq("status", "published").maybeSingle();
       if (!p) return null;
@@ -154,6 +159,7 @@ export default function ProductPageV2() {
   if (!d) return <main className={`${PAGE_X} py-8`}><EmptyState icon={ImageOff} title={t("notfound.title")} action={<Link to="/shop" className="font-semibold underline">{t("nav.shop")}</Link>} /></main>;
 
   const { p, reviews, dist, related, wa } = d;
+  const credit = (d as { credit?: { author: string; license: string; page: string } | null }).credit ?? null;
   const name = pick(locale, p.name_en, p.name_ne) ?? p.name_en;
   const desc = pick(locale, p.description_en, p.description_ne);
   const available = p.stock_quantity - p.reserved_quantity;
@@ -166,7 +172,11 @@ export default function ProductPageV2() {
   const href = window.location.origin + window.location.pathname; // no query/hash in shared links
   const waNum = wa?.replace(/\D/g, "");
   const wished = wish ?? d.wished;
-  const addToCart = () => { add(p.id, qty); toast.success(t("product.added_toast")); };
+  const addToCart = () => { add(p.id, qty); toast.success(t("product.added_named", { name }), { action: { label: t("cart.view"), onClick: () => nav("/cart") } }); setQty(1); };
+  const max = Math.min(99, available);
+  const zones = service?.zones ?? [];
+  const minFee = zones.length ? Math.min(...zones.map((z) => z.fee_paisa)) : null;
+  const showWish = !(import.meta.env.DEV && demoOn());
   const shareData = { title: name, text: `${name} - ${formatNpr(price)}`, url: href };
 
   return (
@@ -180,14 +190,19 @@ export default function ProductPageV2() {
       </nav>
 
       <div className="grid gap-6 md:grid-cols-2 md:gap-10">
-        <Gallery images={images} name={name} locale={locale} />
+        <div className="space-y-2">
+          <Gallery images={images} name={name} locale={locale} categoryId={p.category_id} />
+          {/* Demo catalogue photos are Creative Commons: credit the author and licence as the licence requires. */}
+          {credit && <p className="m-0 text-xs text-muted">{t("pdp.photo_credit", { author: credit.author, license: credit.license })} <a href={credit.page} target="_blank" rel="noopener noreferrer" className="underline">{t("pdp.photo_source")}</a></p>}
+        </div>
         <div className="space-y-4">
           {p.review_count > 0 && <Rating value={avg} count={p.review_count} size={18} label={t("rating.label", { value: avg.toFixed(1), count: p.review_count })} />}
-          <h1 className="m-0 text-3xl font-bold">{name}</h1>
-          <p className="m-0 flex flex-wrap items-baseline gap-x-3">
-            <span className="text-3xl font-bold">{formatNpr(price)}</span>
-            {sale && <s className="text-lg text-muted"><span className="sr-only-text">{t("card.was")} </span>{formatNpr(p.price_paisa)}</s>}
-            {sale && <Badge tone="danger" icon={false}>{pick(locale, p.discount_label_en, p.discount_label_ne) || t("card.off", { n: Math.round((1 - price / p.price_paisa) * 100) })}</Badge>}
+          {cat && <Link to={`/shop?category=${cat.slug}`} className="text-sm font-semibold text-brand-strong no-underline hover-fine:hover:underline">{pick(locale, cat.name_en, cat.name_ne)}</Link>}
+          <h1 className="m-0 text-title font-bold sm:text-[2rem]">{name}</h1>
+          <p className="m-0 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-[1.875rem] font-bold tabular">{formatNpr(price)}</span>
+            {sale && <s className="relative text-lg text-muted tabular"><span className="sr-only-text">{t("card.was")} </span>{formatNpr(p.price_paisa)}</s>}
+            {sale && <Badge tone="accent" icon={false}>{pick(locale, p.discount_label_en, p.discount_label_ne) || t("card.off", { n: Math.round((1 - price / p.price_paisa) * 100) })}</Badge>}
           </p>
           <p className="m-0 flex flex-wrap items-center gap-2">
             {out ? <Badge tone="danger">{t("product.out")}</Badge>
@@ -198,7 +213,12 @@ export default function ProductPageV2() {
             )}
             {p.units_sold > 0 && <span className="text-sm text-muted">{t("product.units_sold", { n: p.units_sold })}</span>}
           </p>
-          <p className="m-0 flex items-center gap-2 text-sm"><Truck aria-hidden size={18} strokeWidth={1.75} />{t("trust.delivery")} · {t("trust.cod")}</p>
+          {(zones.length > 0 || service?.cod) && (
+            <ul className="m-0 list-none space-y-1.5 rounded-lg bg-surface-2 p-3 text-sm">
+              {minFee != null && <li className="flex items-center gap-2"><Truck aria-hidden size={18} strokeWidth={1.75} className="shrink-0 text-brand-strong" />{minFee ? t("pdp.delivery_from", { fee: formatNpr(minFee) }) : t("pdp.delivery_free")}</li>}
+              {service?.cod && <li className="flex items-center gap-2"><Banknote aria-hidden size={18} strokeWidth={1.75} className="shrink-0 text-brand-strong" />{t("trust.cod")}</li>}
+            </ul>
+          )}
 
           {canManage && (
             <div className="space-y-2 rounded-lg border border-line bg-surface-2 p-3">
@@ -210,26 +230,24 @@ export default function ProductPageV2() {
             </div>
           )}
           <div className={`hidden space-y-3 ${canManage ? "" : "md:block"}`}>
-            {!out && (
-              <div className="flex items-center gap-2" role="group" aria-label={t("product.qty")}>
-                <IconButton variant="secondary" icon={Minus} label={t("pdp.less")} disabled={qty <= 1} onClick={() => setQty((n) => Math.max(1, n - 1))} />
-                <span aria-live="polite" className="min-w-10 text-center text-lg font-semibold">{qty}</span>
-                <IconButton variant="secondary" icon={Plus} label={t("pdp.more")} disabled={qty >= Math.min(99, available)} onClick={() => setQty((n) => Math.min(Math.min(99, available), n + 1))} />
-              </div>
-            )}
-            <div className="flex gap-2">
-              <Button size="lg" className="flex-1" disabled={out} leadingIcon={ShoppingCart} onClick={addToCart}>{out ? t("product.out") : t("product.add")}</Button>
-              <Button size="lg" variant="secondary" aria-pressed={wished} leadingIcon={Heart} onClick={async () => { const r = await toggleWishlist(p.id); if (r === "login") window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname)}`); else setWish(r); }}>
-                {wished ? t("wish.saved") : t("wish.add")}
-              </Button>
+            <div className="flex flex-wrap gap-2">
+              {!out && <QtyStepper size="lg" value={qty} max={max} onChange={setQty} labels={{ group: t("product.qty"), less: t("pdp.less"), more: t("pdp.more") }} />}
+              <Button size="lg" className="min-w-48 flex-1" disabled={out} leadingIcon={ShoppingCart} onClick={addToCart}>{out ? t("product.out") : t("product.add")}</Button>
             </div>
           </div>
-
           <div className="flex flex-wrap gap-2">
+              {showWish && <Button variant="secondary" aria-pressed={wished} leadingIcon={Heart} onClick={async () => { const r = await toggleWishlist(p.id); if (r === "login") window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname)}`); else setWish(r); }}>
+                {wished ? t("wish.saved") : t("wish.add")}
+              </Button>}
             <ShareButton data={shareData} trigger={<Button variant="secondary" leadingIcon={Share2}>{t("pdp.share")}</Button>} />
             {waNum && <a className="inline-flex min-h-12 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold text-ink no-underline" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${waNum}?text=${encodeURIComponent(`${name} ${href}`)}`}><MessageCircle aria-hidden size={20} strokeWidth={1.75} />{t("pdp.ask")}</a>}
           </div>
-          {desc && <p className="m-0 whitespace-pre-line pt-2">{desc}</p>}
+          {desc && (
+            <section aria-labelledby="pdp-desc" className="space-y-1.5 border-t border-line pt-4">
+              <h2 id="pdp-desc" className="m-0 text-base font-bold">{t("pdp.about")}</h2>
+              <p className="m-0 max-w-[65ch] whitespace-pre-line text-ink">{desc}</p>
+            </section>
+          )}
         </div>
       </div>
 
@@ -261,12 +279,11 @@ export default function ProductPageV2() {
       )}
 
       {/* Sticky buy bar: compact only, floats above the bottom nav. Glass allowed (floats), ink text only. */}
-      {!canManage && <GlassPanel shape="dialog" className="fixed inset-x-3 z-30 flex items-center gap-3 p-2 pl-4 md:hidden" style={{ bottom: "calc(84px + var(--safe-bottom))" }}>
-        <div className="min-w-0 flex-1">
-          <p className="m-0 text-lg font-bold text-ink">{formatNpr(price)}</p>
-          {sale && <s className="text-sm text-ink">{formatNpr(p.price_paisa)}</s>}
-        </div>
-        <Button disabled={out} leadingIcon={ShoppingCart} onClick={addToCart}>{out ? t("product.out") : t("product.add")}</Button>
+      {!canManage && <GlassPanel shape="dialog" className="fixed inset-x-2 z-30 flex items-center gap-2 p-2 md:hidden" style={{ bottom: "calc(72px + var(--safe-bottom))" }}>
+        {!out && <QtyStepper value={qty} max={max} onChange={setQty} labels={{ group: t("product.qty"), less: t("pdp.less"), more: t("pdp.more") }} />}
+        <Button className="min-w-0 flex-1" disabled={out} leadingIcon={ShoppingCart} onClick={addToCart}>
+          {out ? t("product.out") : <>{t("card.add")} <span className="tabular">{formatNpr(price * qty)}</span></>}
+        </Button>
       </GlassPanel>}
     </main>
   );

@@ -7,6 +7,7 @@ export { SegmentedControl } from "./SegmentedControl";
 export { Field, Input, Textarea, Select } from "./Field";
 export { Checkbox, Radio, ChoiceCard, Switch } from "./Choice";
 export { Chip } from "./Chip";
+export { QtyStepper } from "./QtyStepper";
 export { Badge } from "./Badge";
 export { Alert } from "./Alert";
 export { Card } from "./Card";

@@ -51,7 +51,7 @@ export function WishlistButton({ productId, initial }: { productId: string; init
 }
 
 export type CardProduct = {
-  id: string; slug: string; name_en: string; name_ne: string | null;
+  id: string; slug: string; name_en: string; name_ne: string | null; category_id?: string | null;
   price_paisa: number; discount_price_paisa: number | null;
   stock_quantity: number; reserved_quantity: number; low_stock_threshold: number;
   rating_sum: number; review_count: number; discount_label_en?: string | null; discount_label_ne?: string | null;
@@ -59,7 +59,7 @@ export type CardProduct = {
 };
 
 export const CARD_COLUMNS =
-  "id,slug,name_en,name_ne,price_paisa,discount_price_paisa,discount_label_en,discount_label_ne,stock_quantity,reserved_quantity,low_stock_threshold,rating_sum,review_count,product_images(storage_path,is_primary,sort_order)";
+  "id,slug,category_id,name_en,name_ne,price_paisa,discount_price_paisa,discount_label_en,discount_label_ne,stock_quantity,reserved_quantity,low_stock_threshold,rating_sum,review_count,product_images(storage_path,is_primary,sort_order)";
 
 export function primaryImage(p: Pick<CardProduct, "product_images">) {
   const imgs = [...(p.product_images ?? [])].sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);

@@ -14,8 +14,10 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
   const [active, setActive] = useState(0);
   useEffect(() => {
     const key = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setQ(""); setActive(0); setOpen((o) => !o); } };
+    const openFromButton = () => { setQ(""); setActive(0); setOpen(true); };
     window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
+    window.addEventListener("palette:open", openFromButton);
+    return () => { window.removeEventListener("keydown", key); window.removeEventListener("palette:open", openFromButton); };
   }, []);
   const list = commands;
   const shown = useMemo(() => list.filter((c) => c.label.toLowerCase().includes(q.trim().toLowerCase())), [list, q]);
@@ -25,7 +27,7 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
       <div className="relative">
         <Search aria-hidden size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
         <input role="combobox" aria-expanded aria-controls="palette-list" aria-label={t("admin.palette")} value={q} placeholder={t("admin.palette.placeholder")} autoComplete="off"
-          style={{ paddingLeft: 40 }} className="min-h-12 w-full rounded-sm border border-line-strong bg-surface text-base text-ink"
+          style={{ paddingLeft: 40 }} className="min-h-12 w-full rounded-sm border border-line-strong bg-surface py-2 pr-3 text-base text-ink"
           onChange={(e) => { setQ(e.target.value); setActive(0); }}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(shown.length - 1, a + 1)); }

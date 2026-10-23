@@ -1,4 +1,5 @@
 import { randomUUID } from "@/lib/uuid";
+import { demoOn } from "@/catalog/demoMode";
 // All data access goes straight from the browser to Supabase. Authorisation is enforced by
 // Postgres (RLS policies + SECURITY DEFINER functions that re-check permissions), never by this file.
 import { supabase, errorCode } from "./supabase";
@@ -8,18 +9,19 @@ import { ImageError, prepareImage, type ImageErrorCode } from "./image";
 /* ----- storefront ----- */
 
 export type CartLine = {
-  id: string; slug: string; name_en: string; name_ne: string | null;
+  id: string; slug: string; category_id?: string | null; name_en: string; name_ne: string | null;
   price_paisa: number; discount_price_paisa: number | null; available: number; image: string | null;
 };
 
 export async function loadCartProducts(ids: string[]): Promise<CartLine[]> {
   if (!ids.length) return [];
+  if (import.meta.env.DEV && demoOn()) return (await import("@/catalog/demo")).cartLines(ids);
   const { data } = await supabase.from("products")
-    .select("id,slug,name_en,name_ne,price_paisa,discount_price_paisa,stock_quantity,reserved_quantity,product_images(storage_path,is_primary,sort_order)")
+    .select("id,slug,category_id,name_en,name_ne,price_paisa,discount_price_paisa,stock_quantity,reserved_quantity,product_images(storage_path,is_primary,sort_order)")
     .in("id", ids).eq("status", "published");
   return (data ?? []).map((p) => {
     const imgs = [...(p.product_images ?? [])].sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);
-    return { id: p.id, slug: p.slug, name_en: p.name_en, name_ne: p.name_ne, price_paisa: p.price_paisa,
+    return { id: p.id, slug: p.slug, category_id: p.category_id, name_en: p.name_en, name_ne: p.name_ne, price_paisa: p.price_paisa,
       discount_price_paisa: p.discount_price_paisa, available: p.stock_quantity - p.reserved_quantity, image: imgs[0]?.storage_path ?? null };
   });
 }
@@ -159,6 +161,13 @@ export async function saveProduct(f: Record<string, string>, id?: string): Promi
   const slug = `${slugify(row.name_en)}-${Math.random().toString(36).slice(2, 6)}`;
   const { data, error } = await supabase.from("products").insert({ ...row, slug, stock_quantity: Math.max(0, Math.floor(Number(f.stock ?? 0))) }).select("id").single();
   return error ? { error: error.message } : { id: data.id };
+}
+
+/** Publish, unpublish (draft) or archive one product. RLS allows it only for staff with products.manage. */
+export async function setProductStatus(id: string, status: "published" | "draft" | "archived") {
+  const patch = status === "published" ? { status, published_at: new Date().toISOString() } : { status };
+  const { error } = await supabase.from("products").update(patch).eq("id", id);
+  return error ? error.message : null;
 }
 
 export async function addProductImage(productId: string, path: string, meta?: { width: number; height: number; blur_color: string }) {

@@ -36,3 +36,23 @@
   [data-fx="full"] .chart-bar { transform-box: fill-box; transform-origin: bottom; animation: bar-grow var(--duration-3) var(--ease-out) both; }
 }
 .tabular { font-variant-numeric: tabular-nums; }
+
+/* Small, purposeful feedback. Transform/opacity only; both effects tiers; never under reduced motion. */
+@keyframes cart-bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes page-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .cart-bump { animation: cart-bump 220ms var(--ease-out); }
+  .pop-in { animation: pop-in 160ms var(--ease-out); }
+  .page-in { animation: page-in 220ms var(--ease-out) both; }
+}
+
+/* Product imagery: gentle zoom on hover-capable pointers only. */
+.product-img { transition: transform var(--duration-3) var(--ease-out), opacity var(--duration-3) var(--ease-out); }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .product-card:hover .product-img { transform: scale(1.035); }
+}
+
+/* Horizontal rails: scroll without a visible scrollbar, snap to items. */
+.rail { position: relative; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.rail::-webkit-scrollbar { display: none; }

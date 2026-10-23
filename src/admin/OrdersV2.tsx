@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Badge, Chip, EmptyState, Inbox, Input, Search, Skeleton, TriangleAlert } from "@/ui";
+import { Alert, Badge, Button, ChevronRight, EmptyState, Inbox, Input, Search, Skeleton, SkeletonGroup, TriangleAlert, cn } from "@/ui";
 import { supabase } from "@/lib/supabase";
 import { useT, dateLocale } from "@/lib/i18n";
 import { formatNpr } from "@/lib/money";
@@ -11,6 +11,8 @@ const TABS = ["all", "pending", "payment", "confirmed", "processing", "dispatche
 type Tab = (typeof TABS)[number];
 const STATUS_OF: Partial<Record<Tab, string[]>> = { pending: ["pending_confirmation"], confirmed: ["confirmed"], processing: ["processing"], dispatched: ["dispatched"], delivered: ["delivered"], closed: ["cancelled", "rejected"] };
 const tone = (s: string) => (s === "delivered" ? "success" : s === "cancelled" || s === "rejected" ? "danger" : s === "pending_confirmation" ? "warning" : "info") as "success" | "danger" | "warning" | "info";
+
+const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "?";
 
 export default function OrdersV2() {
   const { t, locale } = useT();
@@ -47,30 +49,57 @@ export default function OrdersV2() {
   const setParam = (k: string, v: string) => { const n = new URLSearchParams(sp); if (v && !(k === "tab" && v === "all")) n.set(k, v); else n.delete(k); setSp(n, { replace: true }); };
 
   return (
-    <main className="space-y-4">
-      <h1 className="m-0 text-3xl font-bold">{t("admin.orders")}</h1>
-      <form role="search" onSubmit={(e) => { e.preventDefault(); setParam("q", String(new FormData(e.currentTarget).get("q") ?? "")); }} className="relative max-w-md">
-        <Search aria-hidden size={18} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted" />
-        <label className="sr-only-text" htmlFor="oq">{t("admin.orders.search")}</label>
-        <Input id="oq" name="q" type="search" defaultValue={sp.get("q") ?? ""} placeholder="ORD-… / 98…" style={{ paddingLeft: 40 }} />
-      </form>
-      <ul aria-label={t("admin.orders.tabs")} className="-mx-1 m-0 flex list-none gap-2 overflow-x-auto p-1">
-        {TABS.map((k) => <li key={k} className="shrink-0"><Chip pressed={tab === k} onClick={() => setParam("tab", k)}>{t(`admin.tab.${k}`)}{counts && counts[k] != null ? ` (${counts[k]})` : ""}</Chip></li>)}
+    <main className="space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="m-0 text-title font-bold">{t("admin.orders")}</h1>
+          {counts && <p className="m-0 text-sm text-muted">{t("orders.summary", { n: counts.all ?? 0, pending: counts.pending ?? 0 })}</p>}
+        </div>
+        <form role="search" onSubmit={(e) => { e.preventDefault(); setParam("q", String(new FormData(e.currentTarget).get("q") ?? "")); }} className="relative w-full max-w-sm">
+          <Search aria-hidden size={18} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted" />
+          <label className="sr-only-text" htmlFor="oq">{t("admin.orders.search")}</label>
+          <Input id="oq" name="q" type="search" defaultValue={sp.get("q") ?? ""} placeholder={t("orders.search_hint")} className="pl-10" />
+        </form>
+      </header>
+      <ul aria-label={t("admin.orders.tabs")} className="rail my-0 flex list-none gap-1 overflow-x-auto rounded-lg border border-line bg-surface p-1.5 shadow-[var(--e1)]">
+        {TABS.map((k) => (
+          <li key={k} className="shrink-0">
+            <button type="button" aria-pressed={tab === k} onClick={() => setParam("tab", k)}
+              className={cn("inline-flex min-h-10 items-center gap-2 rounded-sm px-3 text-sm font-semibold transition-colors", tab === k ? "bg-ink text-[var(--surface)]" : "text-ink hover-fine:hover:bg-surface-2")}>
+              {t(`admin.tab.${k}`)}
+              {counts && counts[k] != null && (
+                <span className={cn("rounded-pill px-1.5 text-xs tabular", tab === k ? "bg-[color-mix(in_oklab,var(--surface)_18%,transparent)]"
+                  : (k === "pending" || k === "payment") && counts[k] > 0 ? "bg-accent text-on-accent" : "bg-surface-2 text-muted")}>{counts[k]}</span>
+              )}
+            </button>
+          </li>
+        ))}
       </ul>
-      {rows.isLoading ? <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} variant="row" />)}</div> : rows.data?.length ? (
-        <ul className="m-0 list-none space-y-2 p-0">
+      {rows.isError ? (
+        <Alert tone="danger"><p className="m-0 font-semibold">{t("orders.load_error")}</p><Button size="sm" variant="secondary" className="mt-2" onClick={() => void rows.refetch()}>{t("common.retry")}</Button></Alert>
+      ) : rows.isLoading ? (
+        <SkeletonGroup label={t("common.loading")} className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} variant="row" />)}</SkeletonGroup>
+      ) : rows.data?.length ? (
+        <ul className="m-0 list-none divide-y divide-[var(--line)] overflow-hidden rounded-lg border border-line bg-surface p-0 shadow-[var(--e1)]">
           {rows.data.map((o) => (
             <li key={o.id}>
-              <Link to={`/admin/orders/${o.id}`} className="flex min-h-12 flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface p-3 text-ink no-underline">
-                <span>
-                  <span className="font-bold">{o.order_number} · {formatNpr(o.total_paisa)}</span>
-                  <span className="block text-sm text-muted">{o.customer_name} · {o.customer_phone} · {new Date(o.placed_at).toLocaleString(dateLocale(locale), { dateStyle: "medium", timeStyle: "short" })}</span>
+              <Link to={`/admin/orders/${o.id}`} className="flex min-h-16 items-center gap-3 px-3 py-3 text-ink no-underline transition-colors hover-fine:hover:bg-[color-mix(in_oklab,var(--surface-2)_50%,transparent)] sm:px-4">
+                <span aria-hidden className="hidden size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-bold sm:flex">{initials(o.customer_name)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{o.customer_name}</span>
+                  <span className="block truncate text-sm text-muted tabular">{o.order_number} <span aria-hidden>|</span> {o.customer_phone} <span aria-hidden>|</span> {new Date(o.placed_at).toLocaleString(dateLocale(locale), { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span>
+                  <span className="mt-1 flex flex-wrap gap-1.5 md:hidden">
+                    <Badge tone={tone(o.status)}>{t(`status.${o.status}`)}</Badge>
+                    {o.payment_status === "awaiting_verification" && <Badge tone="info">{t("pay.awaiting_verification")}</Badge>}
+                  </span>
                 </span>
-                <span className="flex items-center gap-2">
+                <span className="hidden flex-wrap items-center justify-end gap-1.5 md:flex">
                   {o.risk_flags.length > 0 && <Badge tone="warning" icon={TriangleAlert}>{t("admin.risk")} {o.risk_flags.length}</Badge>}
                   {o.payment_status === "awaiting_verification" && <Badge tone="info">{t("pay.awaiting_verification")}</Badge>}
                   <Badge tone={tone(o.status)}>{t(`status.${o.status}`)}</Badge>
                 </span>
+                <span className="w-24 shrink-0 text-right font-bold tabular">{formatNpr(o.total_paisa)}</span>
+                <ChevronRight aria-hidden size={18} className="shrink-0 text-muted" />
               </Link>
             </li>
           ))}

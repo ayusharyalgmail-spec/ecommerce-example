@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { useT } from "@/lib/i18n";
+import { useAdminMessages, useT } from "@/lib/i18n";
+import { PageSkeleton } from "@/shell/PageSkeleton";
 import { useAuth } from "@/lib/auth";
 import { useUiV2 } from "@/shell/useUiV2";
 import AdminShell from "@/shell/AdminShell";
@@ -8,6 +9,8 @@ export default function AdminLayout() {
   const { t } = useT();
   const { perms } = useAuth();
   const v2 = useUiV2();
+  const ready = useAdminMessages();
+  if (!ready) return <PageSkeleton />;
   if (v2) return <AdminShell />;
   // Hiding links is cosmetic only; the database re-checks every permission.
   const links: [string, string, string, boolean?][] = [

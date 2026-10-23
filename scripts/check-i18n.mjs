@@ -2,7 +2,10 @@
 import fs from "node:fs";
 
 const load = (l) => JSON.parse(fs.readFileSync(new URL(`../src/messages/${l}.json`, import.meta.url), "utf8"));
-const en = load("en"), ne = load("ne");
+// The storefront dictionary and the dashboard-only dictionary (loaded lazily by the admin) are checked as one set.
+const en = { ...load("en"), ...load("admin.en") }, ne = { ...load("ne"), ...load("admin.ne") };
+const dup = Object.keys(load("admin.en")).filter((k) => k in load("en"));
+if (dup.length) { console.error(`error: keys in both en.json and admin.en.json: ${dup.join(", ")}`); process.exit(1); }
 const placeholders = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
 
 // Keys whose Nepali text is legitimately identical to English (brand names, codes).
