@@ -8,8 +8,19 @@ import { DEMO_IMAGES, type DemoImage } from "./images";
 
 // Each category tile borrows one representative product photo.
 const CATEGORY_PHOTO: Record<string, string> = {
-  groceries: "red-lentils-1kg", snacks: "potato-chips-family", beverages: "orange-juice-1l", household: "toilet-tissue-pack",
-  "personal-care": "toothbrush", stationery: "pencil-pack", books: "sample-novel", electronics: "usb-cable", kitchen: "pressure-cooker-3l", "home-lifestyle": "led-bulb-9w",
+  "general-store": "basmati-rice-5kg",
+  shoes: "air-running-shoes",
+  clothes: "classic-cotton-tshirt",
+  electronics: "wireless-anc-headphones",
+  groceries: "potatoes-1kg",
+  snacks: "potato-chips-family",
+  beverages: "orange-juice-1l",
+  household: "toilet-tissue-pack",
+  "personal-care": "toothbrush",
+  stationery: "pencil-pack",
+  books: "sample-novel",
+  kitchen: "pressure-cooker-3l",
+  "home-lifestyle": "led-bulb-9w",
 };
 export const heroPhoto: DemoImage | null = DEMO_IMAGES.hero ?? null;
 export const promoPhoto: DemoImage | null = DEMO_IMAGES.promo ?? null;

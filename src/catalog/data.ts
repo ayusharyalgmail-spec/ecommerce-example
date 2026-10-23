@@ -6,9 +6,9 @@ import { useAuth } from "@/lib/auth";
 import { CARD_COLUMNS, type CardProduct } from "@/components/Product";
 import { demoOn } from "./demoMode";
 
-/** The dev-only demo catalogue, or null. In production the condition folds to false and the chunk is not built. */
+/** The demo catalogue, or null when disabled. */
 export async function demo() {
-  return import.meta.env.DEV && demoOn() ? await import("./demo") : null;
+  return demoOn() ? await import("./demo") : null;
 }
 
 const TEN_MIN = 10 * 60_000;
@@ -155,7 +155,7 @@ export function useSuggestions(term: string) {
 export function useWishIds() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["wish-ids", user?.id ?? null], enabled: !!user && !(import.meta.env.DEV && demoOn()), staleTime: 60_000,
+    queryKey: ["wish-ids", user?.id ?? null], enabled: !!user && !demoOn(), staleTime: 60_000,
     queryFn: async (): Promise<Set<string>> => {
       const { data } = await supabase.from("wishlists").select("product_id").eq("user_id", user!.id);
       return new Set((data ?? []).map((r) => r.product_id as string));

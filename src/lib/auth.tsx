@@ -5,11 +5,11 @@ import { supabase } from "./supabase";
 // Mirrors app_private.role_permissions in SQL (DATABASE.md §11). Hiding UI is cosmetic only:
 // every table has row-level security and every sensitive RPC re-checks the permission.
 const ALL = ["products.view", "products.manage", "orders.view", "orders.manage", "orders.verify_payment", "orders.override_confirmation",
-  "customers.view", "coupons.manage", "delivery.manage", "reviews.moderate", "reports.view", "csv.manage", "staff.manage", "settings.manage", "audit.view"];
+  "customers.view", "coupons.manage", "delivery.manage", "reviews.moderate", "reports.view", "csv.manage", "staff.manage", "settings.manage", "audit.view", "messages.reply", "messages.manage"];
 const BY_ROLE: Record<string, string[]> = {
   owner: ALL,
   manager: ALL.filter((p) => !["staff.manage", "settings.manage", "orders.override_confirmation"].includes(p)),
-  staff: ["products.view", "orders.view", "orders.manage"],
+  staff: ["products.view", "orders.view", "orders.manage", "messages.reply"],
 };
 
 type Ctx = {

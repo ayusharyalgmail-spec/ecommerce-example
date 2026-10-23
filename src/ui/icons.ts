@@ -8,5 +8,7 @@ export {
   LayoutDashboard, ClipboardList, Ticket, ChartColumn, Upload, Users, History, Settings, Ellipsis, LogOut, LogIn,
   ExternalLink, Keyboard, Palette, Mail, SlidersHorizontal, ShieldCheck, Tag, RotateCcw, Sparkles, TrendingUp, TrendingDown, Wallet, Banknote, HandCoins, Clock,
   Wheat, Cookie, CupSoda, SprayCan, Droplets, PenLine, BookOpen, Cable, CookingPot, Lamp, Leaf, ShoppingBasket, Milk, Carrot, Smartphone, Sofa, Shirt, Gift, ArrowUpDown, Megaphone,
+  Footprints,
+  Send, CheckCheck, ImagePlus, Eye, WifiOff, Pencil, Archive, RefreshCw, UserRound,
 } from "lucide-react";
 export type { LucideIcon, LucideProps } from "lucide-react";

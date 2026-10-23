@@ -3,8 +3,8 @@ import fs from "node:fs";
 
 const load = (l) => JSON.parse(fs.readFileSync(new URL(`../src/messages/${l}.json`, import.meta.url), "utf8"));
 // The storefront dictionary and the dashboard-only dictionary (loaded lazily by the admin) are checked as one set.
-const en = { ...load("en"), ...load("admin.en") }, ne = { ...load("ne"), ...load("admin.ne") };
-const dup = Object.keys(load("admin.en")).filter((k) => k in load("en"));
+const en = { ...load("en"), ...load("admin.en"), ...load("msg.en") }, ne = { ...load("ne"), ...load("admin.ne"), ...load("msg.ne") };
+const dup = [...Object.keys(load("admin.en")), ...Object.keys(load("msg.en"))].filter((k) => k in load("en"));
 if (dup.length) { console.error(`error: keys in both en.json and admin.en.json: ${dup.join(", ")}`); process.exit(1); }
 const placeholders = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
 

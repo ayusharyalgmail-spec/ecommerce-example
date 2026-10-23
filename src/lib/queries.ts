@@ -13,7 +13,7 @@ export function useCategories() {
     queryKey: ["categories"],
     staleTime: TEN_MIN,
     queryFn: async (): Promise<Category[]> => {
-      if (import.meta.env.DEV && demoOn()) return (await import("@/catalog/demo")).categories;
+      if (demoOn()) return (await import("@/catalog/demo")).categories;
       const { data, error } = await supabase.from("categories").select("id,slug,name_en,name_ne").eq("is_active", true).order("sort_order");
       if (error) throw new Error(error.message);
       return data ?? [];

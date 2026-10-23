@@ -8,6 +8,8 @@ import { useCart } from "@/lib/cart";
 import { useT } from "@/lib/i18n";
 import { useStoreSettings } from "@/lib/queries";
 import { useHideOnScroll } from "./useHideOnScroll";
+import { UnreadPill } from "@/messaging/NavBadge";
+import { useUnread } from "@/messaging/hooks";
 
 // Desktop-only menus (popover content, appearance panel) are a separate chunk: phones never download them.
 const CategoriesMenu = lazy(() => import("./HeaderMenus").then((m) => ({ default: m.CategoriesMenu })));
@@ -28,6 +30,17 @@ const navLink = ({ isActive }: { isActive: boolean }) =>
     "relative inline-flex min-h-12 items-center rounded-md px-3 font-semibold no-underline transition-colors duration-[var(--duration-1)]",
     isActive ? "text-brand-strong after:absolute after:inset-x-3 after:bottom-2 after:h-0.5 after:rounded-pill after:bg-brand-strong" : "text-ink hover-fine:hover:bg-surface-2",
   );
+
+/** Desktop Messages link with the live unread pill. Order tracking stays reachable from messages, the account page and /track. */
+function MessagesLink() {
+  const { t } = useT();
+  const { total } = useUnread();
+  return (
+    <NavLink to="/messages" viewTransition aria-label={total > 0 ? t("msg.nav_unread", { n: total }) : undefined} className={(s) => cn(navLink(s), "gap-2")}>
+      {t("nav.messages")}<UnreadPill />
+    </NavLink>
+  );
+}
 
 function LanguageButton() {
   const { t, locale, setLocale } = useT();
@@ -99,7 +112,7 @@ export function Header() {
           {/* the store mark already links home; the extra link appears once there is room */}
           <span className="hidden lg:contents"><NavLink to="/" end viewTransition className={navLink}>{t("nav.home")}</NavLink></span>
           <NavLink to="/shop" viewTransition className={navLink}>{t("nav.shop")}</NavLink>
-          <NavLink to="/track" viewTransition className={navLink}>{t("nav.track")}</NavLink>
+          <MessagesLink />
         </nav>
 
         {wide && <div className="ml-auto w-full max-w-sm">{showSearch && <Suspense fallback={<span className="block h-12 rounded-md bg-surface-2" />}><SearchBox compact /></Suspense>}</div>}

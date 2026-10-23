@@ -5,12 +5,12 @@
 const KEY = "demo-catalog";
 
 export function demoOn(): boolean {
-  if (!import.meta.env.DEV) return false;
   try {
-    const p = new URLSearchParams(window.location.search).get("demo");
+    const p = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("demo") : null;
     if (p === "1") localStorage.setItem(KEY, "1");
-    else if (p === "0") localStorage.removeItem(KEY);
-    return import.meta.env.VITE_DEMO_CATALOG === "1" || localStorage.getItem(KEY) === "1";
-  } catch { return import.meta.env.VITE_DEMO_CATALOG === "1"; }
+    else if (p === "0") { localStorage.setItem(KEY, "0"); return false; }
+    if (typeof localStorage !== "undefined" && localStorage.getItem(KEY) === "0") return false;
+    return true;
+  } catch { return true; }
 }
 

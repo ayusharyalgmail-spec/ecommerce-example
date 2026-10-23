@@ -15,7 +15,7 @@ export type CartLine = {
 
 export async function loadCartProducts(ids: string[]): Promise<CartLine[]> {
   if (!ids.length) return [];
-  if (import.meta.env.DEV && demoOn()) return (await import("@/catalog/demo")).cartLines(ids);
+  if (demoOn()) return (await import("@/catalog/demo")).cartLines(ids);
   const { data } = await supabase.from("products")
     .select("id,slug,category_id,name_en,name_ne,price_paisa,discount_price_paisa,stock_quantity,reserved_quantity,product_images(storage_path,is_primary,sort_order)")
     .in("id", ids).eq("status", "published");

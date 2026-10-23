@@ -7,7 +7,9 @@ import path from "node:path";
 import zlib from "node:zlib";
 
 const dist = path.resolve("dist"); // run from the project root (npm run size)
-const BUDGET = { entryJs: 200, css: 40, routeChunk: 80 }; // kB gzip
+// entryJs raised 200 -> 205 (owner-approved): the storefront nav now carries the Messages unread badge (guest store, unread
+// polling, nav links), about 2 kB gzip over the 199.1 kB baseline. The rest of Messages is in lazy chunks.
+const BUDGET = { entryJs: 205, css: 40, routeChunk: 80 }; // kB gzip
 const gz = (f) => zlib.gzipSync(fs.readFileSync(f), { level: 9 }).length / 1000;
 
 const html = fs.readFileSync(path.join(dist, "index.html"), "utf8");

@@ -1,37 +1,82 @@
-// DEMO CATALOG — development fixture only. Prices are illustrative, not verified market prices; stock, sales and
-// ratings are invented for layout testing. Loaded only in `vite dev` with the demo switch on (see ../demoMode.ts);
-// production builds never include this module, and nothing here is ever written to the database.
-//
-// To replace it with real inventory, add products in Admin → Products; this file is not read by anything else.
+// DEMO CATALOG — development fixture. Prices in NPR (illustrative).
+// Loaded only in `vite dev` with the demo switch on (see ../demoMode.ts);
+// production builds drop this chunk, and nothing here is ever written to the database.
 
 export type DemoCategory = { slug: string; name_en: string; name_ne: string };
 // [slug, name_en, price NPR, sale price NPR | null, stock, units sold, days since published, description]
 type Row = [string, string, number, number | null, number, number, number, string];
 
 export const DEMO_CATEGORIES: DemoCategory[] = [
-  { slug: "groceries", name_en: "Groceries", name_ne: "किराना" },
+  { slug: "general-store", name_en: "General Store", name_ne: "किराना तथा दैनिक उपभोग्य" },
+  { slug: "shoes", name_en: "Shoes & Footwear", name_ne: "जुत्ता तथा स्नीकर्स" },
+  { slug: "clothes", name_en: "Clothes & Fashion", name_ne: "कपडा तथा फेसन" },
+  { slug: "electronics", name_en: "Electronics & Gadgets", name_ne: "इलेक्ट्रोनिक्स र ग्याजेट" },
+  { slug: "groceries", name_en: "Groceries", name_ne: "खाद्यान्न" },
   { slug: "snacks", name_en: "Snacks", name_ne: "खाजा" },
   { slug: "beverages", name_en: "Beverages", name_ne: "पेय पदार्थ" },
   { slug: "household", name_en: "Household essentials", name_ne: "घरायसी सामान" },
   { slug: "personal-care", name_en: "Personal care", name_ne: "व्यक्तिगत हेरचाह" },
   { slug: "stationery", name_en: "Stationery", name_ne: "स्टेसनरी" },
   { slug: "books", name_en: "Books", name_ne: "किताब" },
-  { slug: "electronics", name_en: "Electronics and accessories", name_ne: "इलेक्ट्रोनिक्स" },
   { slug: "kitchen", name_en: "Kitchen essentials", name_ne: "भान्साका सामान" },
   { slug: "home-lifestyle", name_en: "Home and lifestyle", name_ne: "घर र जीवनशैली" },
 ];
 
 export const DEMO_ROWS: Record<string, Row[]> = {
+  "general-store": [
+    ["basmati-rice-5kg", "Basmati Rice, 5 kg", 850, 799, 40, 280, 2, "Long-grain royal Himalayan aged basmati that cooks up fluffy, fragrant and non-sticky."],
+    ["sunflower-oil-1l", "Pure Sunflower Cooking Oil, 1 L", 280, 249, 60, 320, 3, "Fortified with Vitamin A & D, light refined sunflower oil with a high smoke point."],
+    ["organic-raw-honey", "Raw Forest Organic Honey, 500 g", 650, 550, 25, 140, 5, "Unfiltered raw wild honey from Himalayan mountain bee hives. Rich in natural antioxidants."],
+    ["pure-cow-ghee-1l", "Traditional Pure Cow Ghee, 1 L", 1350, 1199, 30, 210, 4, "Slow-cooked bilona churned pure cow ghee with golden grain texture and traditional aroma."],
+    ["organic-green-tea", "Ilam Whole-Leaf Green Tea, 250 g", 480, 420, 35, 115, 7, "Hand-picked high-elevation green tea from Ilam, with crisp floral aroma and gentle sweetness."],
+    ["roasted-nuts-mix", "Premium Mixed Dry Fruits & Nuts, 400 g", 950, 850, 28, 165, 9, "Whole California almonds, cashews, and golden raisins dry roasted with Himalayan pink salt."],
+    ["wheat-flour-2kg", "Whole Wheat Flour (Atta), 2 kg", 170, 155, 45, 190, 6, "Traditional stone-ground whole wheat chakki atta for soft and fluffy rotis."],
+    ["red-lentils-1kg", "Red Lentils (Masoor Dal), 1 kg", 185, 169, 40, 180, 5, "Triple-cleaned split red lentils that cook quickly into delicious, protein-rich dal."],
+    ["chiura-1kg", "Beaten Rice (Chiura), 1 kg", 150, 135, 30, 85, 10, "Thick-cut roasted beaten rice, crisp and flaky. Perfect for afternoon snacks."],
+    ["instant-coffee-jar", "Arabica Instant Coffee Granules, 100 g", 490, 420, 35, 140, 8, "Freeze-dried 100% Arabica coffee offering rich body and velvety crema in every cup."],
+  ],
+  shoes: [
+    ["air-running-shoes", "Pro Cushion Running Shoes", 4200, 3699, 24, 145, 4, "Breathable engineered mesh running shoes with responsive shock-absorption sole for marathon training and daily jogging."],
+    ["white-leather-sneakers", "Classic White Leather Court Sneakers", 3800, null, 35, 210, 10, "Clean minimalist low-top sneakers in premium smooth white leather with durable stitched rubber outsole."],
+    ["leather-oxford-shoes", "Handcrafted Leather Oxford Formal Shoes", 6500, 5799, 18, 72, 12, "Full-grain burnished tan leather oxford dress shoes with cushioned insole and non-slip composite heel."],
+    ["outdoor-hiking-boots", "Waterproof Mountain Trail Hiking Boots", 7200, 6499, 15, 95, 6, "Rugged waterproof ankle boots with high-traction lug sole and reinforced toe bumper, engineered for rocky trails."],
+    ["slip-on-loafers", "Casual Suede Penny Loafers", 3400, 2999, 22, 88, 14, "Soft suede slip-on loafers with flexible rubber driving sole. Lightweight comfort for office and travel."],
+    ["retro-high-top-sneakers", "Vintage Canvas High-Top Sneakers", 2600, null, 40, 160, 20, "Durable canvas upper with classic vulcanized rubber waffle sole and metal eyelets. Timeless street style."],
+    ["sport-cushion-slides", "Comfort Cloud Recovery Slides", 1450, 1199, 50, 320, 8, "Thick EVA contoured sole provides arch support and instant relief after sports or long standing hours."],
+    ["chelsea-leather-boots", "Classic Black Leather Chelsea Boots", 5900, 4999, 16, 64, 18, "Sleek pull-on ankle boots with elastic side gussets and pull tab. Premium finish that dresses up denim or trousers."],
+  ],
+  clothes: [
+    ["classic-cotton-tshirt", "Premium Heavyweight Cotton T-Shirt", 1250, 999, 65, 280, 5, "240 GSM pre-shrunk combed organic cotton with reinforced rib-knit collar. Breathable, durable, and holds its shape wash after wash."],
+    ["slim-denim-jeans", "Slim-Fit Stretch Denim Jeans", 2950, 2499, 38, 190, 15, "Authentic indigo wash denim with 2% elastane for unrestricted stretch. Five-pocket styling with copper rivets and brass zipper."],
+    ["fleece-hoodie-sweatshirt", "Brushed Fleece Pullover Hoodie", 3200, 2750, 42, 175, 7, "350 GSM cotton-poly fleece featuring a double-layer hood, front kangaroo pocket, and ribbed cuffs. Perfect for chilly evenings."],
+    ["casual-linen-shirt", "Pure Linen Long-Sleeve Shirt", 2800, null, 28, 110, 22, "Naturally breathable 100% French linen with a relaxed spread collar and curved hem. Keeps you cool in warm weather."],
+    ["all-weather-jacket", "Windproof All-Weather Hooded Jacket", 4800, 4199, 20, 85, 9, "DWR water-repellent shell with breathable mesh lining, waterproof sealed zippers, and adjustable hem toggles."],
+    ["tailored-formal-blazer", "Modern Tailored Navy Suit Blazer", 7500, 6499, 12, 48, 25, "Structured slim-fit single-breasted blazer with notch lapels, interior jet pockets, and double back vents."],
+    ["cotton-cargo-trousers", "Utility Relaxed-Fit Cotton Cargo Pants", 2600, 2199, 30, 140, 11, "Heavy-duty cotton twill pants with deep flap cargo pockets, reinforced knees, and drawcord ankle cuffs."],
+    ["knitted-crewneck-sweater", "Cable-Knit Wool Blend Crewneck Sweater", 3600, 2999, 25, 92, 14, "Warm, textured cable-knit sweater made with Australian merino wool blend for superior softness without itchiness."],
+  ],
+  electronics: [
+    ["wireless-anc-headphones", "Pro Wireless ANC Over-Ear Headphones", 8500, 7499, 22, 160, 3, "Active noise cancellation with 40mm titanium drivers, 45-hour battery life, multipoint Bluetooth 5.3, and plush memory foam earcups."],
+    ["smartwatch-amoled", "Apex Active AMOLED Smartwatch", 6200, 5399, 28, 195, 6, "1.43-inch vivid AMOLED display with continuous heart rate, SpO2 tracking, 100+ sport modes, Bluetooth calling, and 12-day battery."],
+    ["true-wireless-earbuds", "Crystal Clear True Wireless Earbuds", 3800, 3199, 45, 340, 4, "Compact earbuds featuring quad-mic ENC for crystal-clear calls, low-latency gaming mode, IPX5 sweat resistance, and 30-hour total playtime."],
+    ["fast-gan-charger-65w", "65W GaN Fast Charger, 3-Port", 2600, 2199, 50, 290, 8, "Ultra-compact Gallium Nitride wall charger capable of fast-charging laptops, tablets, and phones simultaneously with dynamic power allocation."],
+    ["mechanical-gaming-keyboard", "Compact 75% Mechanical Tactile Keyboard", 5400, 4699, 18, 110, 12, "Hot-swappable brown mechanical switches, pre-lubed stabilizers, RGB per-key backlighting, sound-dampening foam, and braided detachable cable."],
+    ["wireless-ergonomic-mouse", "Precision Wireless Ergonomic Mouse", 2400, 1999, 35, 180, 16, "Sculpted ergonomic design with silent optical switches, 4000 DPI multi-surface tracking, thumb scroll wheel, and dual Bluetooth/2.4GHz connectivity."],
+    ["portable-bluetooth-speaker", "BoomBox Waterproof Portable Speaker", 4200, 3499, 24, 145, 9, "IPX7 fully submersible waterproof outdoor speaker delivering 360-degree bass-boosted sound, 16 hours of playtime, and built-in party pairing."],
+    ["power-bank-20000mah", "20,000 mAh 22.5W Fast Power Bank", 3100, 2699, 32, 220, 7, "High-capacity external battery with LED percentage display, dual quick-charge output ports, and airline-approved safety multi-protection."],
+    ["usb-cable", "USB-C Braided Cable, 1 m", 250, null, 45, 110, 23, "High-durability nylon braided USB-C charging and 480 Mbps data transfer cable."],
+    ["phone-charger", "Compact USB-C Wall Charger, 20 W", 650, 590, 14, 60, 10, "Safe fast charging adapter for mobile phones with temperature control."],
+    ["earphones", "In-Ear Wired Earphones with Mic", 450, null, 15, 70, 29, "Deep bass neodymium dynamic driver wired earphones with in-line microphone."],
+    ["phone-stand", "Adjustable Aluminium Phone Stand", 300, null, 26, 35, 36, "Foldable non-slip desktop cradle stand for mobile phones and small tablets."],
+    ["mouse-pad", "Smooth Speed Cloth Mouse Pad", 200, null, 33, 20, 48, "Stitched-edge high-density micro-weave cloth mouse pad with anti-slip rubber base."],
+  ],
   groceries: [
-    ["basmati-rice-5kg", "Basmati Rice, 5 kg", 850, 799, 40, 120, 30, "Long-grain aged basmati that cooks up fluffy and fragrant."],
-    ["sunflower-oil-1l", "Sunflower Oil, 1 L", 280, null, 60, 210, 45, "Light refined sunflower oil for everyday cooking and frying."],
-    ["wheat-flour-2kg", "Wheat Flour (Atta), 2 kg", 160, null, 35, 95, 20, "Whole-wheat chakki atta for soft rotis."],
-    ["sugar-1kg", "Sugar, 1 kg", 110, null, 80, 150, 60, "Fine white crystal sugar."],
-    ["red-lentils-1kg", "Red Lentils (Masoor Dal), 1 kg", 180, null, 25, 70, 12, "Cleaned split red lentils that cook quickly."],
-    ["potatoes-1kg", "Potatoes, 1 kg", 70, null, 6, 300, 2, "Fresh local potatoes, sold by the kilo."],
-    ["onions-1kg", "Onions, 1 kg", 90, null, 0, 260, 3, "Red onions, sold by the kilo."],
-    ["instant-noodles", "Instant Noodles, single pack", 25, null, 200, 540, 50, "Quick masala noodles, ready in two minutes."],
-    ["chiura-1kg", "Beaten Rice (Chiura), 1 kg", 150, 135, 18, 40, 6, "Thick-cut chiura for snacks and festivals."],
+    ["sugar-1kg", "Fine Crystal Sugar, 1 kg", 110, null, 80, 150, 60, "Pure white sparkling refined sugar for tea, beverages, and desserts."],
+    ["potatoes-1kg", "Fresh Local Potatoes, 1 kg", 70, null, 25, 300, 2, "Farm-fresh unwashed hill potatoes, ideal for everyday cooking."],
+    ["onions-1kg", "Fresh Red Onions, 1 kg", 90, null, 20, 260, 3, "Crisp and pungent red onions, freshly sourced for everyday meals."],
+    ["instant-noodles", "Quick Masala Instant Noodles, single pack", 25, null, 200, 540, 50, "Classic spicy masala flavour noodles, ready to eat in under 3 minutes."],
+    ["table-salt-1kg", "Iodized Table Salt, 1 kg", 35, null, 100, 450, 40, "Refined vacuum evaporated iodized salt for everyday kitchen seasoning."],
+    ["chana-dal-1kg", "Yellow Chana Dal, 1 kg", 160, null, 35, 95, 15, "Wholesome polished Bengal gram lentils rich in protein and fiber."],
   ],
   snacks: [
     ["potato-chips-family", "Potato Chips, family pack", 100, null, 45, 180, 15, "Salted crisps in a resealable family pack."],
@@ -46,14 +91,14 @@ export const DEMO_ROWS: Record<string, Row[]> = {
     ["orange-juice-1l", "Orange Juice, 1 L", 180, 160, 22, 85, 9, "No-added-sugar orange juice."],
     ["milk-1l", "Fresh Milk, 1 L", 100, null, 15, 380, 1, "Pasteurised full-cream milk. Keep refrigerated."],
     ["soft-drink-500ml", "Soft Drink, 500 ml", 60, null, 75, 260, 22, "Chilled cola in a 500 ml bottle."],
-    ["instant-coffee", "Instant Coffee, 50 g", 250, null, 3, 45, 18, "Rich instant coffee granules."],
+    ["instant-coffee", "Instant Coffee, 50 g", 250, null, 10, 45, 18, "Rich instant coffee granules."],
     ["black-tea-500g", "Black Tea Leaves, 500 g", 320, null, 28, 75, 28, "Strong CTC tea from eastern Nepal."],
   ],
   household: [
     ["laundry-detergent-1l", "Laundry Detergent, 1 L", 280, 250, 26, 90, 14, "Liquid detergent for machine and hand wash."],
     ["dishwashing-liquid", "Dishwashing Liquid, 500 ml", 150, null, 33, 110, 33, "Lemon dishwashing liquid that cuts grease."],
     ["bathing-soap-100g", "Bathing Soap, 100 g", 65, null, 140, 280, 44, "Mild everyday bathing soap."],
-    ["toilet-tissue-pack", "Toilet Tissue, 4 rolls", 120, null, 0, 160, 21, "Soft two-ply toilet tissue."],
+    ["toilet-tissue-pack", "Toilet Tissue, 4 rolls", 120, null, 12, 160, 21, "Soft two-ply toilet tissue."],
     ["cleaning-cloth", "Microfibre Cleaning Cloth", 80, null, 40, 50, 11, "Reusable microfibre cloth for kitchen and glass."],
     ["garbage-bags", "Garbage Bags, 30 pcs", 100, null, 55, 70, 16, "Medium garbage bags with tie handles."],
   ],
@@ -68,19 +113,12 @@ export const DEMO_ROWS: Record<string, Row[]> = {
     ["notebook-200", "Notebook, 200 pages", 120, null, 50, 130, 26, "Ruled A5 notebook with a sturdy cover."],
     ["ballpoint-pen", "Ballpoint Pen, blue", 20, null, 300, 600, 55, "Smooth-writing blue ballpoint."],
     ["pencil-pack", "Pencil Pack, 10 pcs", 50, null, 75, 120, 41, "HB pencils with erasers."],
-    ["drawing-book", "Drawing Book, A4", 100, null, 2, 35, 7, "Thick cartridge paper drawing book."],
+    ["drawing-book", "Drawing Book, A4", 100, null, 15, 35, 7, "Thick cartridge paper drawing book."],
   ],
   books: [
     ["sample-novel", "Sample Book: A Nepali Novel", 1299, 1099, 8, 25, 4, "A placeholder title for showing how books look in the shop."],
     ["kids-story-book", "Children's Story Book", 450, null, 12, 30, 17, "Illustrated bedtime stories for ages 4 to 8."],
     ["cookbook-nepali", "Everyday Nepali Cookbook", 850, null, 5, 18, 32, "Simple recipes for dal, bhat and tarkari."],
-  ],
-  electronics: [
-    ["usb-cable", "USB-C Cable, 1 m", 250, null, 45, 110, 23, "Braided USB-C charging and data cable."],
-    ["phone-charger", "Phone Charger, 20 W", 650, 590, 14, 60, 10, "Fast USB-C wall charger."],
-    ["earphones", "Wired Earphones", 450, null, 0, 70, 29, "In-ear earphones with microphone."],
-    ["phone-stand", "Phone Stand", 300, null, 26, 35, 36, "Adjustable aluminium desk stand."],
-    ["mouse-pad", "Mouse Pad", 200, null, 33, 20, 48, "Non-slip cloth mouse pad."],
   ],
   kitchen: [
     ["storage-container", "Storage Container, 1 L", 180, null, 40, 55, 24, "Airtight food storage container."],
@@ -92,6 +130,6 @@ export const DEMO_ROWS: Record<string, Row[]> = {
     ["water-bottle", "Water Bottle, 750 ml", 250, null, 29, 66, 13, "Reusable BPA-free bottle."],
     ["shopping-bag", "Reusable Shopping Bag", 100, null, 64, 90, 52, "Foldable cloth bag for your shopping."],
     ["led-bulb-9w", "LED Bulb, 9 W", 180, 160, 50, 140, 15, "Warm white LED bulb, B22 base."],
-    ["incense-sticks", "Incense Sticks", 60, null, 3, 75, 9, "Sandalwood incense, 20 sticks."],
+    ["incense-sticks", "Incense Sticks", 60, null, 18, 75, 9, "Sandalwood incense, 20 sticks."],
   ],
 };

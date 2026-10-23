@@ -645,5 +645,7 @@
   "home.offers.photo_alt": "Baskets of fresh fruit and vegetables at a market",
   "pdp.photo_credit": "Photo: {author}, {license}.",
   "pdp.photo_source": "Source",
-  "demo.credits": "Photo credits"
+  "demo.credits": "Photo credits",
+  "nav.messages": "Messages",
+  "msg.nav_unread": "Messages, {n} unread"
 }

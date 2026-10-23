@@ -13,9 +13,19 @@ let adminEn: Dict | null = null;
 let adminNe: Dict | null = null;
 export const adminMessagesReady = () => adminEn !== null;
 export async function loadAdminMessages() {
+  await loadMsgMessages(); // dashboard chat screens reuse the Messages strings
   if (adminEn) return;
   const [e, n] = await Promise.all([import("@/messages/admin.en.json"), import("@/messages/admin.ne.json")]);
   adminEn = e.default as Dict; adminNe = n.default as Dict;
+}
+
+// Messages-page strings (customer inbox and the dashboard chat views) are a third chunk, loaded with those screens.
+let msgEn: Dict | null = null;
+let msgNe: Dict | null = null;
+export async function loadMsgMessages() {
+  if (msgEn) return;
+  const [e, n] = await Promise.all([import("@/messages/msg.en.json"), import("@/messages/msg.ne.json")]);
+  msgEn = e.default as Dict; msgNe = n.default as Dict;
 }
 
 type Ctx = {
@@ -42,7 +52,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
   // Missing Nepali keys fall back to English; a missing key shows the key itself.
   const t = useCallback((key: string, vars?: Record<string, string | number>) => {
-    let s = (locale === "ne" ? neDict?.[key] ?? adminNe?.[key] : undefined) ?? (en as Dict)[key] ?? adminEn?.[key] ?? key;
+    let s = (locale === "ne" ? neDict?.[key] ?? adminNe?.[key] ?? msgNe?.[key] : undefined) ?? (en as Dict)[key] ?? adminEn?.[key] ?? msgEn?.[key] ?? key;
     if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, String(v));
     return s;
   }, [locale]);

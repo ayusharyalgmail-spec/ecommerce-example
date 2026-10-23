@@ -1,5 +1,7 @@
 import { Link, NavLink, Outlet, ScrollRestoration } from "react-router-dom";
-import { House, ShoppingBag, ShoppingCart, Package, User } from "@/ui";
+import { House, MessageCircle, ShoppingBag, ShoppingCart, User } from "@/ui";
+import { badgeText } from "@/messaging/format";
+import { useUnread } from "@/messaging/hooks";
 import { useCart } from "@/lib/cart";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -13,6 +15,7 @@ function Header() {
   const { t, locale, setLocale } = useT();
   const { count } = useCart();
   const { user, isStaff, signOut } = useAuth();
+  const unread = useUnread().total;
   const storeName = useStoreName();
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/95 backdrop-blur">
@@ -22,7 +25,7 @@ function Header() {
           <NavLink to="/">{t("nav.home")}</NavLink>
           <NavLink to="/shop">{t("nav.shop")}</NavLink>
           <NavLink to="/cart">{t("nav.cart")}{count > 0 && <span className="badge badge-info ml-1">{count}</span>}</NavLink>
-          <NavLink to="/track">{t("nav.track")}</NavLink>
+          <NavLink to="/messages">{t("nav.messages")}{unread > 0 && <span className="badge badge-info ml-1">{badgeText(unread)}</span>}</NavLink>
           {isStaff && <NavLink to="/admin">{t("nav.admin")}</NavLink>}
           {user ? (
             <>
@@ -43,11 +46,12 @@ function BottomNav() {
   const { t } = useT();
   const { count } = useCart();
   const { user } = useAuth();
+  const unread = useUnread().total;
   const items = [
     { to: "/", label: t("nav.home"), icon: House, end: true },
     { to: "/shop", label: t("nav.shop"), icon: ShoppingBag },
     { to: "/cart", label: t("nav.cart"), icon: ShoppingCart, badge: count },
-    { to: "/track", label: t("nav.orders"), icon: Package },
+    { to: "/messages", label: t("nav.messages"), icon: MessageCircle, badge: unread > 0 ? badgeText(unread) : undefined },
     { to: user ? "/account" : "/login", label: user ? t("nav.account") : t("nav.signin"), icon: User },
   ];
   return (

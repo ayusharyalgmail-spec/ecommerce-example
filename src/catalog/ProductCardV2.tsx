@@ -52,7 +52,7 @@ export function ProductCardV2({ p, locale, priority = false, className }: { p: C
   const pct = sale ? Math.round((1 - (p.discount_price_paisa as number) / p.price_paisa) * 100) : 0;
   const inCart = items.find((i) => i.productId === p.id)?.quantity ?? 0;
   const max = Math.min(99, available);
-  const showWish = !canManage && !(import.meta.env.DEV && demoOn());
+  const showWish = !canManage && !demoOn();
 
   const addOne = () => {
     add(p.id, 1);

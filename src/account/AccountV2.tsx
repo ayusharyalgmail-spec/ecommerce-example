@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Badge, Button, buttonStyles, Card, Clock, Field, Heart, MapPin, Package, Receipt, RotateCcw, Select, Skeleton, Star, Textarea, Input, Truck, CircleCheck, X, House, toast, type LucideIcon } from "@/ui";
+import { Alert, Badge, Button, buttonStyles, Card, Clock, Field, Heart, MapPin, MessageCircle, Package, Receipt, RotateCcw, Select, Skeleton, Star, Textarea, Input, Truck, CircleCheck, X, House, toast, type LucideIcon } from "@/ui";
 import { useT, dateLocale } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
@@ -73,7 +73,7 @@ export default function AccountV2() {
         <p className="m-0 text-muted">{user?.email}</p>
       </header>
       <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3">
-        {[{ to: "/account/wishlist", icon: Heart, label: t("wish.title") }, { to: "/account/addresses", icon: MapPin, label: t("addr.title") }, { to: "/track", icon: Truck, label: t("track.title") }].map(({ to, icon: Icon, label }) => (
+        {[{ to: "/account/wishlist", icon: Heart, label: t("wish.title") }, { to: "/account/addresses", icon: MapPin, label: t("addr.title") }, { to: "/messages", icon: MessageCircle, label: t("nav.messages") }, { to: "/track", icon: Truck, label: t("track.title") }].map(({ to, icon: Icon, label }) => (
           <li key={to}>
             <Link to={to} className="flex min-h-24 flex-col items-start justify-between gap-2 rounded-lg border border-line bg-surface p-4 font-semibold text-ink no-underline">
               <span aria-hidden className="flex size-10 items-center justify-center rounded-md bg-brand-tint"><Icon size={22} strokeWidth={1.75} /></span>{label}

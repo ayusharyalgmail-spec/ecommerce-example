@@ -25,7 +25,7 @@ describe("demo catalogue fixture", () => {
     for (const p of demo.products) {
       const img = DEMO_IMAGES[p.slug.replace(/^demo-/, "")];
       expect(img, p.slug).toBeTruthy();
-      expect(img.license).toMatch(/^(CC0|CC BY|CC-BY|Public domain)/i);
+      expect(img.license).toMatch(/^(CC0|CC BY|CC-BY|Public domain|Unsplash)/i);
       expect(img.author.length).toBeGreaterThan(0);
     }
   });
@@ -64,8 +64,8 @@ describe("demo catalogue fixture", () => {
     expect(demo.productPage("nope")).toBeNull();
     const [line] = demo.cartLines([pdp.p.id, "unknown"]);
     expect(line).toMatchObject({ id: pdp.p.id, available: pdp.p.stock_quantity });
-    expect(line.image).toMatch(/^https:\/\/(thumb|upload)\.wikimedia\.org\//);
-    expect(pdp.credit).toMatchObject({ license: expect.stringMatching(/^(CC|Public domain)/i) });
+    expect(line.image).toMatch(/^https:\/\/(thumb|upload)\.wikimedia\.org\/|^https:\/\/images\.unsplash\.com\//);
+    expect(pdp.credit).toMatchObject({ license: expect.stringMatching(/^(CC|Public domain|Unsplash)/i) });
   });
 });
 

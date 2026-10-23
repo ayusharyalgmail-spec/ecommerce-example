@@ -94,7 +94,7 @@ export default function CheckoutV2() {
   const itemsKey = JSON.stringify(items);
   useEffect(() => {
     if (!items.length || !zoneId) return;
-    if (import.meta.env.DEV && demoOn()) return; // demo ids are unknown to the server
+    if (demoOn()) return; // demo ids are unknown to the server
     let off = false;
     void quoteCheckout(items, zoneId, applied).then((r) => {
       if (off) return;
@@ -201,7 +201,7 @@ export default function CheckoutV2() {
   ];
   const zone = zones.find((z) => z.id === zoneId);
   // Demo products exist only in the browser; the server would reject them, so ordering is switched off up front.
-  const demoMode = import.meta.env.DEV && demoOn();
+  const demoMode = demoOn();
   const instr = pick(locale, ps.instructions_en, ps.instructions_ne);
   const priceChanged = error === "checkout.price_changed";
 

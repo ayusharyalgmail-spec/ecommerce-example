@@ -53,7 +53,7 @@ export default function AppLayout() {
   return (
     <>
       <a href="#content" className="skip-link">{t("shell.skip")}</a>
-      {import.meta.env.DEV && demoOn() && <DemoStrip />}
+      {demoOn() && <DemoStrip />}
       <Header />
       {alerts}
       <div id="content" ref={content} tabIndex={-1} className="outline-none">

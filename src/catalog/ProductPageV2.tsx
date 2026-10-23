@@ -176,7 +176,7 @@ export default function ProductPageV2() {
   const max = Math.min(99, available);
   const zones = service?.zones ?? [];
   const minFee = zones.length ? Math.min(...zones.map((z) => z.fee_paisa)) : null;
-  const showWish = !(import.meta.env.DEV && demoOn());
+  const showWish = !demoOn();
   const shareData = { title: name, text: `${name} - ${formatNpr(price)}`, url: href };
 
   return (

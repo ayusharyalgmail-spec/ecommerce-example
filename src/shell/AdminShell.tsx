@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import {
-  Bell, ChartColumn, ChevronLeft, ChevronRight, ClipboardList, Ellipsis, ExternalLink, History, IconButton, LayoutDashboard, LogOut, Package,
-  Palette, Popover, Search, Settings, Sheet, Star, Tag, Ticket, Truck, Upload, Users, Wallet, cn, type LucideIcon,
+  Bell, ChartColumn, ChevronLeft, ChevronRight, ClipboardList, Ellipsis, ExternalLink, History, IconButton, IconLink, LayoutDashboard, LogOut, MessageCircle, Package,
+  Palette, Popover, Search, Settings, Sheet, Star, Store, Tag, Ticket, Truck, Upload, Users, Wallet, cn, type LucideIcon,
 } from "@/ui";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useStoreSettings } from "@/lib/queries";
 import { usePendingOrders } from "@/admin/usePending";
+import { useStaffUnreadChats } from "@/admin/useStaffChats";
 import { AppearancePanel } from "./AppearancePanel";
 import { StoreMark } from "./Header";
 import { CommandPalette } from "@/admin/CommandPalette";
@@ -23,6 +24,7 @@ function useAdminNav(): NavItem[] {
   const all: NavItem[] = [
     { to: "/admin", label: t("admin.dashboard"), perm: "orders.view", icon: LayoutDashboard, end: true, group: "sell" },
     { to: "/admin/orders", label: t("admin.orders"), perm: "orders.view", icon: ClipboardList, group: "sell" },
+    { to: "/admin/messages", label: t("admin.messages"), perm: "messages.reply", icon: MessageCircle, group: "sell" },
     { to: "/admin/money", label: t("admin.money"), perm: "orders.manage", icon: Wallet, group: "sell" },
     { to: "/admin/reports", label: t("admin.reports"), perm: "reports.view", icon: ChartColumn, group: "sell" },
     { to: "/admin/products", label: t("admin.products"), perm: "products.view", icon: Package, group: "catalog" },
@@ -51,6 +53,7 @@ const item = (isActive: boolean, collapsed = false) => cn(
 function NavList({ items, collapsed = false, onPick }: { items: NavItem[]; collapsed?: boolean; onPick?: () => void }) {
   const { t } = useT();
   const pending = usePendingOrders().data ?? 0;
+  const chats = useStaffUnreadChats().data ?? 0;
   return (
     <>
       {GROUPS.map((g) => {
@@ -66,6 +69,9 @@ function NavList({ items, collapsed = false, onPick }: { items: NavItem[]; colla
                   <>
                     <Icon aria-hidden size={20} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
                     {!collapsed && <span className="min-w-0 flex-1 truncate">{label}</span>}
+                    {to === "/admin/messages" && chats > 0 && (
+                      <span aria-hidden className={cn("rounded-pill bg-accent px-1.5 text-xs font-bold text-on-accent tabular", collapsed && "absolute right-1 top-1")}>{chats > 9 ? "9+" : chats}</span>
+                    )}
                     {to === "/admin/orders" && pending > 0 && (
                       <span aria-hidden className={cn("rounded-pill bg-accent px-1.5 text-xs font-bold text-on-accent tabular", collapsed && "absolute right-1 top-1")}>{pending}</span>
                     )}
@@ -134,7 +140,7 @@ export default function AdminShell() {
     <div className="min-h-dvh bg-page">
       <header className="sticky top-0 z-40 border-b border-line bg-surface">
         <div className="flex h-16 items-center gap-2 px-3 sm:px-5">
-          <Link to="/admin" className="mr-auto min-w-0 rounded-md no-underline md:mr-4 md:w-56">
+          <Link to="/" aria-label={t("shell.view_store")} className="mr-auto min-w-0 rounded-md no-underline md:mr-4 md:w-56">
             <StoreMark name={store?.store_name} />
           </Link>
           <button type="button" onClick={() => window.dispatchEvent(new Event("palette:open"))}
@@ -150,6 +156,7 @@ export default function AdminShell() {
               {pending > 0 && <span aria-hidden className="absolute right-1 top-1 min-w-5 rounded-pill bg-accent px-1 text-center text-xs font-bold text-on-accent ring-2 ring-[var(--surface)] tabular">{pending > 99 ? "99+" : pending}</span>}
             </Link>
           )}
+          <IconLink to="/" icon={Store} label={t("shell.view_store")} className="sm:hidden" />
           <Link to="/" className="hidden min-h-11 items-center gap-2 rounded-md px-3 text-sm font-semibold text-ink no-underline hover-fine:hover:bg-surface-2 sm:inline-flex">
             <ExternalLink aria-hidden size={18} strokeWidth={1.8} />{t("shell.view_store")}
           </Link>

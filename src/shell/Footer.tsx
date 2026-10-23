@@ -69,7 +69,7 @@ export function Footer() {
         <nav aria-labelledby="f-help">
           <h2 id="f-help" className={heading}>{t("footer.help")}</h2>
           <ul className="m-0 list-none p-0">
-            <li><Link to="/track" className={link}>{t("footer.delivery")}</Link></li>
+            <li><Link to="/messages" className={link}>{t("nav.messages")}</Link></li>
             <li><Link to={user ? "/account" : "/login"} className={link}>{user ? t("nav.account") : t("nav.signin")}</Link></li>
             {user && <li><Link to="/account/wishlist" className={link}>{t("wish.title")}</Link></li>}
             {returns && <li><button type="button" onClick={() => setPolicy(true)} className={cn(link, "bg-transparent p-0 font-[inherit]")}>{t("footer.returns")}</button></li>}
