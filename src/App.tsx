@@ -38,6 +38,7 @@ const BusinessLayout = lazy(() => import("@/business/BusinessLayout"));
 const BusinessHome = lazy(() => import("@/business/BusinessHome"));
 // Hub pages are lazy chunks too.
 // The hub dashboard (vendor profile editors) is code-split so directory visitors never download it.
+const PlatformAdmin = lazy(() => import("@/platform/PlatformAdmin"));
 const DashboardLayout = lazy(() => import("@/dashboard/DashboardLayout"));
 const DashboardHome = lazy(() => import("@/dashboard/DashboardHome"));
 const ProfileEditor = lazy(() => import("@/dashboard/ProfileEditor"));
@@ -141,6 +142,7 @@ const hubRoutes: RouteObject[] = [
   { path: "/b/:slug", element: lazyEl(<BusinessLayout />), errorElement: <RouteError />, children: [{ index: true, element: lazyEl(<BusinessHome />) }] },
   { path: "/login", element: lazyEl(<Login />), errorElement: <RouteError /> },
   { path: "/auth/callback", element: <AuthCallback /> },
+  { path: "/platform-admin", element: <RequireAuth>{lazyEl(<PlatformAdmin />)}</RequireAuth>, errorElement: <RouteError /> },
   {
     path: "/dashboard", element: <RequireAuth>{lazyEl(<DashboardLayout />)}</RequireAuth>, errorElement: <RouteError />,
     children: [

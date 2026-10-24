@@ -169,5 +169,19 @@ await db.exec(`insert into storage.objects(bucket_id,name) values ('product-imag
 check("fm staff cannot delete a legacy object", (await as("fmOwner", FM, "delete from storage.objects where name='legacy/old.webp'")).n === 0);
 check("flagship staff cannot delete fm objects", (await as("flagOwner", undefined, `delete from storage.objects where name='${FM}/p1/mine.webp'`)).n === 0);
 
+console.log("seed.sql (development data)");
+{
+  let err = null;
+  const seed = fs.readFileSync(path.resolve(MIGRATIONS, "../seed.sql"), "utf8");
+  try { await db.exec(seed); await db.exec(seed); } catch (e) { err = e.message; }
+  check("seed.sql runs twice without error (idempotent)", err === null, err);
+  const s = await q("select slug, status, features from public.tenants where slug in ('ecommerce','family-mart') order by slug");
+  check("seed: ecommerce has every feature, family-mart a subset",
+    s.length === 2 && Object.values(s[0].features).every((v) => v === true) && s[1].features.ledger === false && s[1].features.coupons === true, JSON.stringify(s));
+  const fm = "(select id from public.tenants where slug='family-mart')";
+  const c = (await q(`select (select count(*)::int from public.store_settings where tenant_id=${fm}) s, (select count(*)::int from public.products where tenant_id=${fm} and sku like 'FM-%') p, (select count(*)::int from public.delivery_zones where tenant_id=${fm}) z`))[0];
+  check("seed: family-mart has its own settings, one zone and two products", c.s === 1 && c.p === 2 && c.z === 1, JSON.stringify(c));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
