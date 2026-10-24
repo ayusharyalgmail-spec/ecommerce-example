@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Alert, Badge, Button, Card, Field, Input, ShoppingCart, toast } from "@/ui";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
-import { useStoreSettings } from "@/lib/queries";
+import { invalidateShared, useStoreSettings } from "@/lib/queries";
 import { deriveBrand } from "@/theme/brand";
 
 /** Brand colour with a live preview and the same contrast derivation the storefront applies (ThemeProvider). */
@@ -23,7 +23,7 @@ export function BrandPanel() {
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success(t("common.saved")); setEdit(null);
-    void qc.invalidateQueries({ queryKey: ["settings", "public"] });
+    void invalidateShared(qc, "settings");
   }
 
   return (

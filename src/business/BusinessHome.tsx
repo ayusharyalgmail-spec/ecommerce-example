@@ -3,7 +3,7 @@
 // Each section is designed to feel like a real, professional, paid business website.
 import { useState, useCallback } from "react";
 import { useT, pick } from "@/lib/i18n";
-import { useTenant } from "@/platform/TenantContext";
+import { useBusiness as useTenant } from "@/platform/TenantContext";
 import { useTenantServices, useTenantHours, useTenantGallery, tenantAssetUrl } from "@/platform/queries";
 import { submitInquiry } from "@/platform/api";
 import { Button, Field, Input, Textarea } from "@/ui";

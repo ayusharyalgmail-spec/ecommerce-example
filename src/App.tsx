@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider, loadMsgMessages, useT } from "@/lib/i18n";
 import { ThemeProvider } from "@/theme/ThemeProvider";
@@ -12,6 +12,9 @@ import { NotFound } from "@/shell/NotFound";
 import { PageSkeleton } from "@/shell/PageSkeleton";
 import { ToastHost } from "@/ui";
 import { RequireAuth, RequireStaff } from "@/components/ui";
+import { TenantProvider, useTenant } from "@/platform/TenantContext";
+import { basenameFor, resolveTenantRef } from "@/platform/resolve";
+import { StoreGate } from "@/platform/StoreGate";
 
 // Shop (Bazaar Glass v2 is the only storefront)
 const HomeV2 = lazy(() => import("@/catalog/HomeV2"));
@@ -26,6 +29,22 @@ const AccountV2 = lazy(() => import("@/account/AccountV2"));
 import Wishlist from "@/pages/Wishlist";
 import Addresses from "@/pages/Addresses";
 import Invoice from "@/pages/Invoice";
+
+const NetworkLayout = lazy(() => import("@/network/NetworkLayout"));
+const NetworkHome = lazy(() => import("@/network/NetworkHome"));
+const AboutPlatform = lazy(() => import("@/network/AboutPlatform"));
+const BusinessLayout = lazy(() => import("@/business/BusinessLayout"));
+const BusinessHome = lazy(() => import("@/business/BusinessHome"));
+// Hub pages are lazy chunks too.
+// The hub dashboard (vendor profile editors) is code-split so directory visitors never download it.
+const DashboardLayout = lazy(() => import("@/dashboard/DashboardLayout"));
+const DashboardHome = lazy(() => import("@/dashboard/DashboardHome"));
+const ProfileEditor = lazy(() => import("@/dashboard/ProfileEditor"));
+const ServicesEditor = lazy(() => import("@/dashboard/ServicesEditor"));
+const GalleryEditor = lazy(() => import("@/dashboard/GalleryEditor"));
+const HoursEditor = lazy(() => import("@/dashboard/HoursEditor"));
+const InquiriesView = lazy(() => import("@/dashboard/InquiriesView"));
+const SettingsEditor = lazy(() => import("@/dashboard/SettingsEditor"));
 
 // The shop admin is code-split so shoppers never download it.
 // Dev-only primitives gallery (not part of the production bundle: the route is added only in DEV).
@@ -52,11 +71,17 @@ const AdminMessages = lazy(() => import("@/admin/MessagesAdmin"));
 // Customer Messages replaces Track order in the navigation; /track itself is unchanged.
 const MessagesPage = lazy(() => loadMsgMessages().then(() => import("@/messaging/MessagesPage")));
 
-const queryClient = new QueryClient();
+/** Platform-level cache (tenant lookup only). Each tenant then gets its own cache inside TenantProvider. */
+const platformClient = new QueryClient();
+
+const safeSession = () => { try { return window.sessionStorage; } catch { return null; } };
+/** Resolved once per page load: the tenant never changes without a navigation that reloads the app. */
+const tenantRef = resolveTenantRef(window.location, import.meta.env.VITE_ROOT_DOMAIN as string | undefined, safeSession());
+const isHub = tenantRef.kind === "hub";
 
 const lazyEl = (el: React.ReactNode) => <Suspense fallback={<PageSkeleton />}>{el}</Suspense>;
 
-const router = createBrowserRouter([
+const storeRoutes: RouteObject[] = [
   // The shop, at its original paths
   {
     element: <AppLayout />,
@@ -104,24 +129,58 @@ const router = createBrowserRouter([
       { path: "*", element: <NotFound /> },
     ],
   },
-]);
+];
+
+/** Hub: the vendor directory, public business pages and the vendor dashboard. */
+const hubRoutes: RouteObject[] = [
+  { path: "/", element: <Navigate to="/network" replace /> },
+  { path: "/network", element: lazyEl(<NetworkLayout />), errorElement: <RouteError />, children: [{ index: true, element: lazyEl(<NetworkHome />) }, { path: "about", element: lazyEl(<AboutPlatform />) }] },
+  { path: "/b/:slug", element: lazyEl(<BusinessLayout />), errorElement: <RouteError />, children: [{ index: true, element: lazyEl(<BusinessHome />) }] },
+  { path: "/login", element: lazyEl(<Login />), errorElement: <RouteError /> },
+  { path: "/auth/callback", element: <AuthCallback /> },
+  {
+    path: "/dashboard", element: <RequireAuth>{lazyEl(<DashboardLayout />)}</RequireAuth>, errorElement: <RouteError />,
+    children: [
+      { index: true, element: lazyEl(<DashboardHome />) },
+      { path: "profile", element: lazyEl(<ProfileEditor />) },
+      { path: "services", element: lazyEl(<ServicesEditor />) },
+      { path: "gallery", element: lazyEl(<GalleryEditor />) },
+      { path: "hours", element: lazyEl(<HoursEditor />) },
+      { path: "inquiries", element: lazyEl(<InquiriesView />) },
+      { path: "settings", element: lazyEl(<SettingsEditor />) },
+    ],
+  },
+  { path: "*", element: <NotFound /> },
+];
+
+const router = createBrowserRouter(isHub ? hubRoutes : storeRoutes, { basename: basenameFor(tenantRef) });
 
 function Toasts() {
   const { t } = useT();
   return <ToastHost closeLabel={t("common.close")} />;
 }
 
+/** Store-only providers: cart (one per store), brand colour, and the not-found/loading gate. */
+function StoreApp() {
+  const { slug } = useTenant();
+  return (
+    <CartProvider scope={slug}>
+      <BrandLoader />
+      <StoreGate><RouterProvider router={router} /></StoreGate>
+    </CartProvider>
+  );
+}
+
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={platformClient}>
       <ThemeProvider>
-        <BrandLoader />
         <I18nProvider>
           <AuthProvider>
-            <CartProvider>
-              <RouterProvider router={router} />
+            <TenantProvider tenantRef={tenantRef}>
+              {isHub ? <RouterProvider router={router} /> : <StoreApp />}
               <Toasts />
-            </CartProvider>
+            </TenantProvider>
           </AuthProvider>
         </I18nProvider>
       </ThemeProvider>

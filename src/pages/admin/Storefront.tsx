@@ -1,3 +1,4 @@
+import { invalidateShared } from "@/lib/queries";
 import { randomUUID } from "@/lib/uuid";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -27,7 +28,7 @@ export default function Storefront() {
   useTitle(t("admin.storefront"));
   const banners = useQuery(async () => ((await supabase.from("banners").select(`${BANNER_COLUMNS},sort_order,is_active`).order("sort_order")).data ?? []) as Row[], []);
   const cats = useQuery(async () => (await supabase.from("categories").select("id,slug,name_en,name_ne,image_path").order("sort_order")).data ?? [], []);
-  const refresh = () => { banners.reload(); cats.reload(); void qc.invalidateQueries({ queryKey: ["banners"] }); void qc.invalidateQueries({ queryKey: ["categories"] }); };
+  const refresh = () => { banners.reload(); cats.reload(); void invalidateShared(qc, "banners"); void invalidateShared(qc, "categories"); };
   const fail = (e: unknown) => toast.error(e instanceof Error ? e.message : t("common.error"));
 
   async function addBanner(e: React.FormEvent<HTMLFormElement>) {
