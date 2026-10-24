@@ -37,6 +37,8 @@ await db.exec(`
 
 // ---- apply the real migration -----------------------------------------------------------------------------
 for (const m of MIGS) await db.exec(fs.readFileSync(m, "utf8"));
+// The applied multi_tenant_platform migration also inserts the Royal Bakery demo tenant; the fixtures below assume a clean slate.
+await db.exec("delete from public.tenants where slug = 'royal-bakery'");
 console.log("both tenant migrations applied in order without error\n");
 
 // ---- fixtures (superuser) ---------------------------------------------------------------------------------

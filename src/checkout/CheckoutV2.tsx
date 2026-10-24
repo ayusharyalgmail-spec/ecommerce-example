@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { placeOrder, quoteCheckout, type Quote } from "@/lib/api";
 import { prepareImage } from "@/lib/image";
 import { randomUUID } from "@/lib/uuid";
+import { tenantPath } from "@/lib/tenantScope";
 import { formatNpr } from "@/lib/money";
 import { useTitle } from "@/components/ui";
 import { PAGE_X } from "@/catalog/layout";
@@ -118,7 +119,7 @@ export default function CheckoutV2() {
     setError(null);
     try {
       const prepared = await prepareImage(file, 1200);
-      const path = `proofs/pre_${randomUUID()}.${prepared.ext}`;
+      const path = tenantPath(`proofs/pre_${randomUUID()}.${prepared.ext}`);
       const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, prepared.blob, { contentType: `image/${prepared.ext === "webp" ? "webp" : "jpeg"}` });
       if (upErr) throw upErr;
       setProofPath(path);

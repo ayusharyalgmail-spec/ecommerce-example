@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { ALL_FEATURES, FLAGSHIP_SLUG, normalizeFeatures, type FeatureKey, type TenantFeatures } from "./features";
 import { type TenantRef } from "./resolve";
 import { setFlagshipFallback } from "@/catalog/demoMode";
+import { setActiveTenant } from "@/lib/tenantScope";
 
 export type Tenant = {
   id: string;
@@ -130,15 +131,17 @@ export function TenantProvider({ tenantRef, children }: { tenantRef: TenantRef; 
   });
 
   const value = useMemo<TenantState>(() => {
-    if (tenantRef.kind === "hub") return HUB;
+    if (tenantRef.kind === "hub") { setActiveTenant(null); return HUB; }
     setFlagshipFallback(false);
     const flagship = (tenantRef.kind === "slug" && tenantRef.slug === FLAGSHIP_SLUG) || (tenantRef.kind === "domain" && !q.isLoading && !q.data);
     const row = q.data ?? null;
     // The flagship keeps working offline / before it is seeded: it falls back to the bundled demo fixture.
     if (!row && flagship) {
       setFlagshipFallback(!q.isLoading);
+      setActiveTenant(null);
       return { mode: "store", tenant: q.isLoading ? null : FLAGSHIP_FALLBACK, tenantId: null, slug: FLAGSHIP_SLUG, isLoading: q.isLoading, error: null, hasFeature: () => true, isFallback: true };
     }
+    setActiveTenant(row?.id ?? null);
     const slug = row?.slug ?? (tenantRef.kind === "slug" ? tenantRef.slug : null);
     const features: TenantFeatures = row?.slug === FLAGSHIP_SLUG ? ALL_FEATURES : normalizeFeatures(row?.features);
     return {

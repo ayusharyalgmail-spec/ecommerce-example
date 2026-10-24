@@ -179,12 +179,12 @@ export default function App() {
     <QueryClientProvider client={platformClient}>
       <ThemeProvider>
         <I18nProvider>
-          <AuthProvider>
-            <TenantProvider tenantRef={tenantRef}>
+          <TenantProvider tenantRef={tenantRef}>
+            <AuthProvider>
               {isHub ? <RouterProvider router={router} /> : <StoreApp />}
               <Toasts />
-            </TenantProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </TenantProvider>
         </I18nProvider>
       </ThemeProvider>
     </QueryClientProvider>

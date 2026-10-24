@@ -5,6 +5,7 @@ import { DEMO_ALLOWED, demoOn } from "@/catalog/demoMode";
 import { supabase, errorCode } from "./supabase";
 import { normalizePhone, rupeesToPaisa } from "./money";
 import { minQty } from "./minQty";
+import { activeTenantId, tenantPath } from "./tenantScope";
 import { ImageError, prepareImage, type ImageErrorCode } from "./image";
 
 /* ----- storefront ----- */
@@ -38,10 +39,13 @@ export type Quote = {
 
 export async function quoteCheckout(items: { productId: string; quantity: number }[], zoneId: string, coupon: string):
   Promise<{ ok: true; quote: Quote } | { ok: false; code: string }> {
-  const { data, error } = await supabase.rpc("quote_checkout", { p_items: items, p_zone_id: zoneId, p_coupon: coupon.trim() || null });
+  const { data, error } = await supabase.rpc("quote_checkout", { ...tenantArg(), p_items: items, p_zone_id: zoneId, p_coupon: coupon.trim() || null });
   if (error) return { ok: false, code: errorCode(error.message) };
   return { ok: true, quote: data as Quote };
 }
+
+/** p_tenant_id once the tenant is known from the database (the isolation migration requires it); nothing before that. */
+const tenantArg = () => { const p_tenant_id = activeTenantId(); return p_tenant_id ? { p_tenant_id } : {}; };
 
 export type PlaceInput = {
   idempotencyKey: string; items: { productId: string; quantity: number }[]; zoneId: string; coupon: string;
@@ -65,7 +69,7 @@ export async function placeOrder(i: PlaceInput): Promise<PlaceResult> {
   if (!phone || i.name.trim().length < 2 || i.address.trim().length < 3 || !i.items.length) return { ok: false, code: "VALIDATION_FAILED", retryable: false };
   // Optional fields are sent as null (omitting them makes PostgREST look for a different function signature).
   const { data, error } = await supabase.rpc("place_order", {
-    p_idempotency_key: i.idempotencyKey, p_items: i.items, p_zone_id: i.zoneId, p_coupon: i.coupon.trim() || null,
+    ...tenantArg(), p_idempotency_key: i.idempotencyKey, p_items: i.items, p_zone_id: i.zoneId, p_coupon: i.coupon.trim() || null,
     p_payment_method: i.paymentMethod, p_name: i.name.trim(), p_phone: phone, p_email: i.email.trim() || null,
     p_recipient: i.name.trim(), p_ship_phone: phone, p_address: i.address.trim(), p_landmark: i.landmark.trim() || null,
     p_municipality: i.municipality.trim() || null, p_district: i.district.trim() || null, p_locale: i.locale,
@@ -192,7 +196,7 @@ export async function uploadProductImage(productId: string | undefined, file: Fi
   let prepared;
   try { prepared = await prepareImage(file); }
   catch (e) { return { ok: false, code: e instanceof ImageError ? e.code : "decode", detail: String(e) }; }
-  const path = `products/${productId}/${randomUUID()}.${prepared.ext}`;
+  const path = tenantPath(`products/${productId}/${randomUUID()}.${prepared.ext}`);
   const up = await supabase.storage.from("product-images").upload(path, prepared.blob, { contentType: prepared.blob.type, upsert: false });
   if (up.error) {
     const st = Number((up.error as { statusCode?: string | number }).statusCode ?? (up.error as { status?: number }).status);

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { activeTenantId } from "./tenantScope";
 
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -6,6 +7,17 @@ export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 // runs as the signed-in user (or anon), so Postgres row-level security does the authorising.
 export const supabase = createClient(SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY as string, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: "pkce" },
+  // Tells Postgres which store this request is for (app_private.current_tenant_id). It only SELECTS a tenant: every permission is
+  // still checked against membership of that tenant, so a forged header cannot grant access.
+  global: {
+    fetch: (input, init) => {
+      const id = activeTenantId();
+      if (!id) return fetch(input, init);
+      const headers = new Headers(init?.headers);
+      headers.set("x-tenant-id", id);
+      return fetch(input, { ...init, headers });
+    },
+  },
 });
 
 /** Stable error codes raised by our SQL functions ("CODE: detail"). */

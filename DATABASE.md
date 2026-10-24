@@ -598,3 +598,17 @@ Constraints: MIME allowlist (`image/jpeg`, `image/png`, `image/webp`), max 5 MB 
 4. Product variants are a **future extension**; `weight_grams` is a placeholder for future weight-based delivery.
 5. Supabase image transformations are not assumed; images are resized client-side before upload (see ARCHITECTURE.md).
 6. Per-vendor cost figures are estimates and must be rechecked against current Supabase and Vercel pricing at go-live.
+
+
+---
+
+## 14. Multi-tenant model (pending migration `20261024150000_tenant_isolation`)
+
+Not applied to any live database. Apply order: `20261021100516` (already live) then `20261024140000` (tenant hardening: drops the weak tenant policies and recreates safe ones) then `20261024150000` (this section). Both new files are idempotent.
+
+- **New tables**: `tenant_members(tenant_id, user_id, role)`; `platform_admins(user_id)` (ensured); `tenants.features jsonb` with keys `coupons, campaigns, ledger, messaging, min_order_qty, reviews, pos_export` (a missing key means off; the flagship `ecommerce` is always all-on).
+- **`tenant_id uuid NOT NULL`** (FK `tenants(id)`, index `idx_<table>_tenant`, default `app_private.current_tenant_id()`) on: audit_logs, banners, cart_items, carts, categories, coupon_redemptions, coupons, customer_addresses, delivery_zones, ledger_customers, ledger_entries, msg_campaign_reads, msg_campaigns, msg_conversations, msg_guests, msg_messages, msg_notifications, msg_preferences, notification_deliveries, notification_events, notification_preferences, order_items, order_status_events, order_verifications, orders, payment_records, product_images, products, push_subscriptions, reviews, staff_invites, staff_members, stock_movements, store_settings, wishlists, break_glass_sessions. Existing rows are assigned to `ecommerce` through a constant column default, so no rewrite triggers fire and the append-only ledger and audit triggers are untouched.
+- **Per-tenant uniqueness**: `(tenant_id, slug)` categories, `(tenant_id, code)` coupons, `(tenant_id, sku)` and `(tenant_id, slug)` products, `(tenant_id, order_number)` orders, `(tenant_id, phone)` ledger customers; `store_settings` PK is `tenant_id`.
+- **Functions**: `public.is_platform_admin()`, `public.is_tenant_member(uuid, text[])`, `public.get_tenant_by_slug` (now returns `features` and `status`), `public.get_tenant_by_domain`, `public.platform_create_store(...)`, `public.platform_set_tenant_features(...)`, `public.quote_checkout(p_tenant_id, ...)`, `public.place_order(p_tenant_id, ...)`. In `app_private`: `current_tenant_id`, `flagship_tenant_id`, `tenant_feature`, `tenant_is_active`, `has_permission(text, uuid)`, `storage_tenant`. `place_order`, `admin_store_settings`, the payment-method trigger and `release_expired_orders` are patched in place to read the current tenant's `store_settings` row (each patch is asserted).
+- **Client contract**: the browser sends `x-tenant-id` and `p_tenant_id` only once the tenant has been read from the database (`src/lib/tenantScope.ts`). Before that, or in the offline flagship fallback, requests are identical to the single-store ones.
+- **Verify**: `node supabase/tests/tenancy.mjs` (70 checks).

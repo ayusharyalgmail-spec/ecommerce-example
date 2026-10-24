@@ -1,4 +1,5 @@
 import { randomUUID } from "@/lib/uuid";
+import { tenantPath } from "@/lib/tenantScope";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Badge, Button, buttonStyles, Check, CircleCheck, Clock, Download, Field, Input, MessageCircle, Package, Share2, Skeleton, Truck, X, House, type LucideIcon } from "@/ui";
@@ -29,7 +30,7 @@ function PaymentProof({ token, onDone }: { token: string; onDone: () => void }) 
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) { setMsg({ ok: false, text: t("pay.file_bad") }); return; }
     setBusy(true);
     try {
-      const path = `proofs/${randomUUID()}.webp`;
+      const path = tenantPath(`proofs/${randomUUID()}.webp`);
       const up = await supabase.storage.from("payment-proofs").upload(path, await toWebp(file), { contentType: "image/webp" });
       if (up.error) throw up.error;
       const { error } = await supabase.rpc("submit_payment_proof", { p_token: token, p_reference: ref || null, p_proof_path: path });
