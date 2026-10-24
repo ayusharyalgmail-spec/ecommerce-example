@@ -11,6 +11,7 @@ import { demoOn } from "./demoMode";
 import { categoryIcon } from "./categoryIcon";
 import { primaryImage, type CardProduct } from "@/components/Product";
 import { lineIssue, minQty } from "@/lib/minQty";
+import { useFeature } from "@/platform/TenantContext";
 
 /** Neutral image well for products without a photo: the category's line icon, never a broken-image glyph. */
 export function ProductFallback({ categoryId, size = 40, className }: { categoryId?: string | null; size?: number; className?: string }) {
@@ -45,7 +46,8 @@ export function ProductCardV2({ p, locale, priority = false, className }: { p: C
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const available = p.stock_quantity - p.reserved_quantity;
-  const min = minQty(p.min_purchase_qty);
+  const minOn = useFeature("min_order_qty");
+  const min = minOn ? minQty(p.min_purchase_qty) : 1;
   const out = lineIssue(min, available, min) === "out";
   const img = failed ? null : primaryImage(p);
   const name = pick(locale, p.name_en, p.name_ne);

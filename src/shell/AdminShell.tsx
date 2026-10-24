@@ -5,6 +5,8 @@ import {
   Palette, Popover, Search, Settings, Sheet, Star, Store, Tag, Ticket, Truck, Upload, Users, Wallet, cn, type LucideIcon,
 } from "@/ui";
 import { useAuth } from "@/lib/auth";
+import { useTenant } from "@/platform/TenantContext";
+import type { FeatureKey } from "@/platform/features";
 import { useT } from "@/lib/i18n";
 import { useStoreSettings } from "@/lib/queries";
 import { usePendingOrders } from "@/admin/usePending";
@@ -13,32 +15,33 @@ import { AppearancePanel } from "./AppearancePanel";
 import { StoreMark } from "./Header";
 import { CommandPalette } from "@/admin/CommandPalette";
 
-type NavItem = { to: string; label: string; perm: string; icon: LucideIcon; end?: boolean; group: "sell" | "catalog" | "store" | "team" };
+type NavItem = { to: string; label: string; perm: string; icon: LucideIcon; end?: boolean; group: "sell" | "catalog" | "store" | "team"; feature?: FeatureKey };
 
 const GROUPS = ["sell", "catalog", "store", "team"] as const;
 
 function useAdminNav(): NavItem[] {
   const { t } = useT();
   const { perms } = useAuth();
+  const { hasFeature } = useTenant();
   // Hiding links is cosmetic only; the database re-checks every permission (ARCHITECTURE.md section 5).
   const all: NavItem[] = [
     { to: "/admin", label: t("admin.dashboard"), perm: "orders.view", icon: LayoutDashboard, end: true, group: "sell" },
     { to: "/admin/orders", label: t("admin.orders"), perm: "orders.view", icon: ClipboardList, group: "sell" },
-    { to: "/admin/messages", label: t("admin.messages"), perm: "messages.reply", icon: MessageCircle, group: "sell" },
-    { to: "/admin/money", label: t("admin.money"), perm: "orders.manage", icon: Wallet, group: "sell" },
+    { to: "/admin/messages", label: t("admin.messages"), perm: "messages.reply", icon: MessageCircle, group: "sell", feature: "messaging" },
+    { to: "/admin/money", label: t("admin.money"), perm: "orders.manage", icon: Wallet, group: "sell", feature: "ledger" },
     { to: "/admin/reports", label: t("admin.reports"), perm: "reports.view", icon: ChartColumn, group: "sell" },
     { to: "/admin/products", label: t("admin.products"), perm: "products.view", icon: Package, group: "catalog" },
     { to: "/admin/categories", label: t("admin.categories"), perm: "products.manage", icon: Tag, group: "catalog" },
-    { to: "/admin/reviews", label: t("admin.reviews"), perm: "reviews.moderate", icon: Star, group: "catalog" },
-    { to: "/admin/coupons", label: t("admin.coupons"), perm: "coupons.manage", icon: Ticket, group: "catalog" },
+    { to: "/admin/reviews", label: t("admin.reviews"), perm: "reviews.moderate", icon: Star, group: "catalog", feature: "reviews" },
+    { to: "/admin/coupons", label: t("admin.coupons"), perm: "coupons.manage", icon: Ticket, group: "catalog", feature: "coupons" },
     { to: "/admin/zones", label: t("admin.zones"), perm: "delivery.manage", icon: Truck, group: "store" },
     { to: "/admin/storefront", label: t("admin.storefront"), perm: "settings.manage", icon: Palette, group: "store" },
     { to: "/admin/settings", label: t("admin.settings"), perm: "settings.manage", icon: Settings, group: "store" },
     { to: "/admin/staff", label: t("admin.staff"), perm: "staff.manage", icon: Users, group: "team" },
-    { to: "/admin/import", label: t("admin.csv"), perm: "csv.manage", icon: Upload, group: "team" },
+    { to: "/admin/import", label: t("admin.csv"), perm: "csv.manage", icon: Upload, group: "team", feature: "pos_export" },
     { to: "/admin/audit", label: t("admin.audit"), perm: "audit.view", icon: History, group: "team" },
   ];
-  return all.filter((i) => perms.has(i.perm));
+  return all.filter((i) => perms.has(i.perm) && (!i.feature || hasFeature(i.feature)));
 }
 
 const readCollapsed = () => { try { return localStorage.getItem("admin.sidebar") === "collapsed"; } catch { return false; } };

@@ -5,6 +5,7 @@ import { useCart } from "@/lib/cart";
 import { useT, pick } from "@/lib/i18n";
 import { loadCartProducts } from "@/lib/api";
 import { fixQty, lineIssue } from "@/lib/minQty";
+import { useFeature } from "@/platform/TenantContext";
 import { formatNpr } from "@/lib/money";
 import { imageUrl, supabase } from "@/lib/supabase";
 import { useServiceInfo } from "@/lib/queries";
@@ -14,6 +15,7 @@ import { ProductFallback } from "@/catalog/ProductCardV2";
 
 export default function CartV2() {
   const { items, setQty, remove, clear, add } = useCart();
+  const minOn = useFeature("min_order_qty");
   const { t, locale } = useT();
   useTitle(t("cart.title"));
   const ids = items.map((i) => i.productId).sort();
@@ -41,7 +43,7 @@ export default function CartV2() {
     );
   }
 
-  const byId = new Map((lines.data ?? []).map((l) => [l.id, l]));
+  const byId = new Map((lines.data ?? []).map((l) => [l.id, minOn ? l : { ...l, min_qty: 1 }]));
   const rows = items.map((i) => ({ i, l: byId.get(i.productId) }));
   const problems = rows.filter(({ i, l }) => !l || lineIssue(i.quantity, l.available, l.min_qty) !== null);
   const blocked = problems.length > 0;

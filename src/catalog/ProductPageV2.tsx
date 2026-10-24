@@ -17,6 +17,7 @@ import { demoOn } from "./demoMode";
 import { CardGrid, ProductCardV2, ProductFallback } from "./ProductCardV2";
 import { PAGE_X } from "./layout";
 import { lineIssue, minQty } from "@/lib/minQty";
+import { useFeature } from "@/platform/TenantContext";
 
 type Img = { id: string; storage_path: string; alt_en: string | null; alt_ne: string | null; is_primary: boolean; sort_order: number; width: number | null; height: number | null; blur_color: string | null };
 
@@ -127,6 +128,7 @@ export default function ProductPageV2() {
   const { add } = useCart();
   const cats = useCategories().data;
   const [qty, setQty] = useState(1);
+  const minOn = useFeature("min_order_qty");
   const [wish, setWish] = useState<boolean | null>(null);
   const service = useServiceInfo().data;
   const nav = useNavigate();
@@ -165,7 +167,7 @@ export default function ProductPageV2() {
   const desc = pick(locale, p.description_en, p.description_ne);
   const available = p.stock_quantity - p.reserved_quantity;
   // Shoppers start at, and cannot go below, the product's minimum order; quote_checkout enforces the same rule.
-  const min = minQty((p as { min_purchase_qty?: number }).min_purchase_qty);
+  const min = minOn ? minQty((p as { min_purchase_qty?: number }).min_purchase_qty) : 1;
   const out = lineIssue(min, available, min) === "out";
   const buyQty = Math.max(qty, min);
   const images = ([...p.product_images] as Img[]).sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);
@@ -212,7 +214,7 @@ export default function ProductPageV2() {
             {out ? <Badge tone="danger">{t("product.out")}</Badge>
               : available < p.low_stock_threshold ? <Badge tone="warning">{t("product.low", { n: available })}</Badge>
               : <Badge tone="success">{t("product.in_stock", { n: available })}</Badge>}
-            {(p as { min_purchase_qty?: number }).min_purchase_qty != null && (p as { min_purchase_qty?: number }).min_purchase_qty! > 1 && (
+            {minOn && (p as { min_purchase_qty?: number }).min_purchase_qty != null && (p as { min_purchase_qty?: number }).min_purchase_qty! > 1 && (
               <Badge tone="info">{t("product.min_qty", { n: String((p as { min_purchase_qty?: number }).min_purchase_qty) })}</Badge>
             )}
             {p.units_sold > 0 && <span className="text-sm text-muted">{t("product.units_sold", { n: p.units_sold })}</span>}

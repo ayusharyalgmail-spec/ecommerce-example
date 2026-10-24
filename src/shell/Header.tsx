@@ -10,6 +10,7 @@ import { useStoreSettings } from "@/lib/queries";
 import { useHideOnScroll } from "./useHideOnScroll";
 import { UnreadPill } from "@/messaging/NavBadge";
 import { useUnread } from "@/messaging/hooks";
+import { useFeature } from "@/platform/TenantContext";
 
 // Desktop-only menus (popover content, appearance panel) are a separate chunk: phones never download them.
 const CategoriesMenu = lazy(() => import("./HeaderMenus").then((m) => ({ default: m.CategoriesMenu })));
@@ -84,6 +85,7 @@ function CartLink({ count }: { count: number }) {
  * Expanded: store mark, categories, links, product search, language, account, labelled cart; never hides.
  */
 export function Header() {
+  const messagingOn = useFeature("messaging");
   const { t } = useT();
   const { pathname, search } = useLocation();
   const { count } = useCart();
@@ -112,7 +114,7 @@ export function Header() {
           {/* the store mark already links home; the extra link appears once there is room */}
           <span className="hidden lg:contents"><NavLink to="/" end viewTransition className={navLink}>{t("nav.home")}</NavLink></span>
           <NavLink to="/shop" viewTransition className={navLink}>{t("nav.shop")}</NavLink>
-          <MessagesLink />
+          {messagingOn && <MessagesLink />}
         </nav>
 
         {wide && <div className="ml-auto w-full max-w-sm">{showSearch && <Suspense fallback={<span className="block h-12 rounded-md bg-surface-2" />}><SearchBox compact /></Suspense>}</div>}

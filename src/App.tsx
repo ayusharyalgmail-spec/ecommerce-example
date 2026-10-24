@@ -13,8 +13,9 @@ import { PageSkeleton } from "@/shell/PageSkeleton";
 import { ToastHost } from "@/ui";
 import { RequireAuth, RequireStaff } from "@/components/ui";
 import { TenantProvider, useTenant } from "@/platform/TenantContext";
+import type { FeatureKey } from "@/platform/features";
 import { basenameFor, resolveTenantRef } from "@/platform/resolve";
-import { StoreGate } from "@/platform/StoreGate";
+import { FeatureGate, StoreGate } from "@/platform/StoreGate";
 
 // Shop (Bazaar Glass v2 is the only storefront)
 const HomeV2 = lazy(() => import("@/catalog/HomeV2"));
@@ -80,6 +81,8 @@ const tenantRef = resolveTenantRef(window.location, import.meta.env.VITE_ROOT_DO
 const isHub = tenantRef.kind === "hub";
 
 const lazyEl = (el: React.ReactNode) => <Suspense fallback={<PageSkeleton />}>{el}</Suspense>;
+/** A lazy route that only exists for tenants with the feature (the module is not even downloaded otherwise). */
+const gated = (feature: FeatureKey, el: React.ReactNode) => <FeatureGate feature={feature}>{lazyEl(el)}</FeatureGate>;
 
 const storeRoutes: RouteObject[] = [
   // The shop, at its original paths
@@ -93,7 +96,7 @@ const storeRoutes: RouteObject[] = [
       { path: "/cart", element: lazyEl(<CartV2 />) },
       { path: "/checkout", element: lazyEl(<CheckoutV2 />) },
       { path: "/track", element: lazyEl(<TrackV2 />) },
-      { path: "/messages", element: lazyEl(<MessagesPage />) },
+      { path: "/messages", element: gated("messaging", <MessagesPage />) },
       { path: "/login", element: lazyEl(<Login />) },
       { path: "/auth/callback", element: <AuthCallback /> },
       { path: "/account", element: <RequireAuth>{lazyEl(<AccountV2 />)}</RequireAuth> },
@@ -110,15 +113,15 @@ const storeRoutes: RouteObject[] = [
           { path: "products", element: lazyEl(<ProductsV2 />) },
           { path: "products/new", element: lazyEl(<ProductEditV2 />) },
           { path: "products/:id", element: lazyEl(<ProductEditV2 />) },
-          { path: "reviews", element: lazyEl(<AdminReviews />) },
-          { path: "coupons", element: lazyEl(<AdminCoupons />) },
+          { path: "reviews", element: gated("reviews", <AdminReviews />) },
+          { path: "coupons", element: gated("coupons", <AdminCoupons />) },
           { path: "zones", element: lazyEl(<AdminZones />) },
-          { path: "money", element: lazyEl(<AdminMoney />) },
-          { path: "messages", element: lazyEl(<AdminMessages />) },
+          { path: "money", element: gated("ledger", <AdminMoney />) },
+          { path: "messages", element: gated("messaging", <AdminMessages />) },
           { path: "categories", element: lazyEl(<AdminCategories />) },
           { path: "storefront", element: lazyEl(<AdminStorefront />) },
           { path: "reports", element: lazyEl(<ReportsV2 />) },
-          { path: "import", element: lazyEl(<AdminImport />) },
+          { path: "import", element: gated("pos_export", <AdminImport />) },
           { path: "staff", element: lazyEl(<AdminStaff />) },
           { path: "audit", element: lazyEl(<AdminAudit />) },
           { path: "settings", element: lazyEl(<AdminSettings />) },
