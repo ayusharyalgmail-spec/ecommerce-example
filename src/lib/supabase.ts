@@ -10,7 +10,7 @@ export const supabase = createClient(SUPABASE_URL, import.meta.env.VITE_SUPABASE
 
 /** Stable error codes raised by our SQL functions ("CODE: detail"). */
 export function errorCode(message: string | undefined): string {
-  const m = message?.match(/^(INSUFFICIENT_STOCK|COUPON_UNAVAILABLE|IDEMPOTENCY_CONFLICT|VALIDATION_FAILED|RATE_LIMIT_EXCEEDED|NOT_FOUND|FORBIDDEN|STALE_STATUS|INVALID_TRANSITION)/);
+  const m = message?.match(/^(INSUFFICIENT_STOCK|MIN_QUANTITY|COUPON_UNAVAILABLE|IDEMPOTENCY_CONFLICT|VALIDATION_FAILED|RATE_LIMIT_EXCEEDED|NOT_FOUND|FORBIDDEN|STALE_STATUS|INVALID_TRANSITION)/);
   return m ? m[1] : "UNKNOWN";
 }
 

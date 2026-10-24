@@ -16,6 +16,7 @@ import { demo, recordView } from "./data";
 import { demoOn } from "./demoMode";
 import { CardGrid, ProductCardV2, ProductFallback } from "./ProductCardV2";
 import { PAGE_X } from "./layout";
+import { lineIssue, minQty } from "@/lib/minQty";
 
 type Img = { id: string; storage_path: string; alt_en: string | null; alt_ne: string | null; is_primary: boolean; sort_order: number; width: number | null; height: number | null; blur_color: string | null };
 
@@ -163,7 +164,10 @@ export default function ProductPageV2() {
   const name = pick(locale, p.name_en, p.name_ne) ?? p.name_en;
   const desc = pick(locale, p.description_en, p.description_ne);
   const available = p.stock_quantity - p.reserved_quantity;
-  const out = available <= 0;
+  // Shoppers start at, and cannot go below, the product's minimum order; quote_checkout enforces the same rule.
+  const min = minQty((p as { min_purchase_qty?: number }).min_purchase_qty);
+  const out = lineIssue(min, available, min) === "out";
+  const buyQty = Math.max(qty, min);
   const images = ([...p.product_images] as Img[]).sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);
   const avg = p.review_count ? p.rating_sum / p.review_count : 0;
   const price = p.discount_price_paisa ?? p.price_paisa;
@@ -172,7 +176,7 @@ export default function ProductPageV2() {
   const href = window.location.origin + window.location.pathname; // no query/hash in shared links
   const waNum = wa?.replace(/\D/g, "");
   const wished = wish ?? d.wished;
-  const addToCart = () => { add(p.id, qty); toast.success(t("product.added_named", { name }), { action: { label: t("cart.view"), onClick: () => nav("/cart") } }); setQty(1); };
+  const addToCart = () => { add(p.id, buyQty); toast.success(t("product.added_named", { name }), { action: { label: t("cart.view"), onClick: () => nav("/cart") } }); setQty(1); };
   const max = Math.min(99, available);
   const zones = service?.zones ?? [];
   const minFee = zones.length ? Math.min(...zones.map((z) => z.fee_paisa)) : null;
@@ -231,7 +235,7 @@ export default function ProductPageV2() {
           )}
           <div className={`hidden space-y-3 ${canManage ? "" : "md:block"}`}>
             <div className="flex flex-wrap gap-2">
-              {!out && <QtyStepper size="lg" value={qty} max={max} onChange={setQty} labels={{ group: t("product.qty"), less: t("pdp.less"), more: t("pdp.more") }} />}
+              {!out && <QtyStepper size="lg" value={buyQty} floor={min} max={max} onChange={setQty} labels={{ group: t("product.qty"), less: t("pdp.less"), more: t("pdp.more") }} />}
               <Button size="lg" className="min-w-48 flex-1" disabled={out} leadingIcon={ShoppingCart} onClick={addToCart}>{out ? t("product.out") : t("product.add")}</Button>
             </div>
           </div>
@@ -280,9 +284,9 @@ export default function ProductPageV2() {
 
       {/* Sticky buy bar: compact only, floats above the bottom nav. Glass allowed (floats), ink text only. */}
       {!canManage && <GlassPanel shape="dialog" className="fixed inset-x-2 z-30 flex items-center gap-2 p-2 md:hidden" style={{ bottom: "calc(72px + var(--safe-bottom))" }}>
-        {!out && <QtyStepper value={qty} max={max} onChange={setQty} labels={{ group: t("product.qty"), less: t("pdp.less"), more: t("pdp.more") }} />}
+        {!out && <QtyStepper value={buyQty} floor={min} max={max} onChange={setQty} labels={{ group: t("product.qty"), less: t("pdp.less"), more: t("pdp.more") }} />}
         <Button className="min-w-0 flex-1" disabled={out} leadingIcon={ShoppingCart} onClick={addToCart}>
-          {out ? t("product.out") : <>{t("card.add")} <span className="tabular">{formatNpr(price * qty)}</span></>}
+          {out ? t("product.out") : <>{t("card.add")} <span className="tabular">{formatNpr(price * buyQty)}</span></>}
         </Button>
       </GlassPanel>}
     </main>

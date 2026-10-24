@@ -4,11 +4,11 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { isDemoPhoto, supabase, SUPABASE_URL } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { CARD_COLUMNS, type CardProduct } from "@/components/Product";
-import { demoOn } from "./demoMode";
+import { DEMO_ALLOWED, demoOn } from "./demoMode";
 
 /** The demo catalogue, or null when disabled. */
 export async function demo() {
-  return demoOn() ? await import("./demo") : null;
+  return DEMO_ALLOWED && demoOn() ? await import("./demo") : null;
 }
 
 const TEN_MIN = 10 * 60_000;

@@ -4,6 +4,7 @@ import { Alert, Badge, Button, buttonStyles, EmptyState, GlassPanel, IconButton,
 import { useCart } from "@/lib/cart";
 import { useT, pick } from "@/lib/i18n";
 import { loadCartProducts } from "@/lib/api";
+import { fixQty, lineIssue } from "@/lib/minQty";
 import { formatNpr } from "@/lib/money";
 import { imageUrl, supabase } from "@/lib/supabase";
 import { useServiceInfo } from "@/lib/queries";
@@ -42,14 +43,17 @@ export default function CartV2() {
 
   const byId = new Map((lines.data ?? []).map((l) => [l.id, l]));
   const rows = items.map((i) => ({ i, l: byId.get(i.productId) }));
-  const problems = rows.filter(({ i, l }) => !l || l.available <= 0 || i.quantity > l.available);
+  const problems = rows.filter(({ i, l }) => !l || lineIssue(i.quantity, l.available, l.min_qty) !== null);
   const blocked = problems.length > 0;
   const unit = (l: { discount_price_paisa: number | null; price_paisa: number }) => l.discount_price_paisa ?? l.price_paisa;
   const subtotal = rows.reduce((n, { i, l }) => (l && l.available > 0 ? n + unit(l) * Math.min(i.quantity, l.available) : n), 0);
   const savings = rows.reduce((n, { i, l }) => (l && l.available > 0 && l.discount_price_paisa != null ? n + (l.price_paisa - l.discount_price_paisa) * Math.min(i.quantity, l.available) : n), 0);
   const count = rows.reduce((n, { i, l }) => (l && l.available > 0 ? n + Math.min(i.quantity, l.available) : n), 0);
   const undo = (id: string, qty: number) => { remove(id); toast.info(t("cart.removed"), { action: { label: t("common.undo"), onClick: () => add(id, qty) } }); };
-  const fixAll = () => problems.forEach(({ i, l }) => { if (!l || l.available <= 0) remove(i.productId); else setQty(i.productId, l.available); });
+  const fixAll = () => problems.forEach(({ i, l }) => {
+    const n = l ? fixQty(i.quantity, l.available, l.min_qty) : 0;
+    if (n === 0) remove(i.productId); else setQty(i.productId, n);
+  });
   const left = threshold != null ? Math.max(0, threshold - subtotal) : null;
   const checkout = blocked
     ? <Button block size="lg" disabled>{t("cart.checkout")}</Button>
@@ -70,8 +74,9 @@ export default function CartV2() {
       <div className="md:grid md:grid-cols-[minmax(0,1fr)_22rem] md:items-start md:gap-8">
         <ul className="m-0 list-none divide-y divide-[var(--line)] rounded-lg border border-line bg-surface p-0">
           {rows.map(({ i, l }) => {
-            const out = !l || l.available <= 0;
-            const over = !!l && l.available > 0 && i.quantity > l.available;
+            const issue = l ? lineIssue(i.quantity, l.available, l.min_qty) : "out";
+            const out = issue === "out";
+            const over = issue === "over";
             const name = l ? pick(locale, l.name_en, l.name_ne) : t("cart.unavailable");
             return (
               <li key={i.productId} className="flex gap-3 p-3 sm:gap-4 sm:p-4">
@@ -86,8 +91,9 @@ export default function CartV2() {
                   {l && <p className="m-0 text-sm text-muted tabular">{t("cart.each", { price: formatNpr(unit(l)) })}{l.discount_price_paisa != null && <s className="ml-2">{formatNpr(l.price_paisa)}</s>}</p>}
                   {out && l && <Badge tone="danger" className="w-fit">{t("product.out")}</Badge>}
                   {over && l && <Badge tone="warning" className="w-fit">{t("cart.only_n", { n: l.available })}</Badge>}
+                  {issue === "below_min" && l && <Badge tone="warning" className="w-fit">{t("product.min_qty", { n: l.min_qty })}</Badge>}
                   <div className="mt-auto flex items-center gap-2 pt-1">
-                    {l && !out && <QtyStepper value={Math.min(i.quantity, l.available)} max={Math.min(99, l.available)} onChange={(n) => setQty(i.productId, n)}
+                    {l && !out && <QtyStepper value={Math.min(i.quantity, l.available)} floor={Math.min(l.min_qty, i.quantity)} max={Math.min(99, l.available)} onChange={(n) => setQty(i.productId, n)}
                       labels={{ group: t("card.qty_in_cart", { name }), less: t("pdp.less"), more: t("pdp.more") }} />}
                     <IconButton className="ml-auto" variant="ghost" icon={Trash2} label={t("cart.remove_named", { name })} onClick={() => undo(i.productId, i.quantity)} />
                   </div>

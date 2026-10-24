@@ -1,0 +1,1 @@
+revoke execute on function public.list_staff() from public, anon; revoke execute on function public.my_notifications(int) from public, anon; grant execute on function public.list_staff() to authenticated; grant execute on function public.my_notifications(int) to authenticated;

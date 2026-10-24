@@ -530,6 +530,30 @@ Constraints: MIME allowlist (`image/jpeg`, `image/png`, `image/webp`), max 5 MB 
 - The release script (D-013) applies pending migrations to each vendor project one at a time, stopping on first failure, then records `store_settings.deployed_version`.
 - Seed data: `supabase/seed.sql` (demo products, zones, coupons) for local/staging/demo only. Production vendors get a minimal onboarding seed (settings row, default zone, owner invite).
 
+### Current state (24 Oct 2026)
+
+- `supabase/migrations/` holds all 18 migrations applied to the first vendor project (`ecommerce-nepal`), under
+  the **same version numbers** as `supabase_migrations.schema_migrations`. Each file is byte-identical to the
+  live `statements[1]`, which the md5 query below confirms:
+  `select version, name, md5(array_to_string(statements, E';\n')) from supabase_migrations.schema_migrations order by version;`
+  compared with `md5sum supabase/migrations/<version>_*.sql`.
+- `20261023220853_products_min_purchase_qty` was applied on 24 Oct 2026 with owner approval. The repo file was
+  renamed to the version the platform assigned. Note: its column comment says the minimum is "enforced in the
+  cart and at checkout", but today neither the cart nor `place_order` checks it. It is display-only until that
+  enforcement is built.
+- Pending (in the repo, **not yet applied** to any vendor):
+  - `20261024100000_orders_payment_method_enabled`: held by the owner.
+  - `20261024120000_quote_checkout_min_purchase_qty`: awaiting owner approval. Makes `quote_checkout` (and so
+    `place_order`) reject `MIN_QUANTITY` lines below `min_purchase_qty` and `VALIDATION_FAILED` quantities below 1,
+    and corrects the column comment. Old/new comparison test: identical quotes for valid carts.
+- Known exceptions to the seed rule above, already applied and so left unedited (fix with later migrations, never
+  by rewriting history): `rls_and_rpc` inserts demo zones, categories and a sample book;
+  `staff_invites_reviews_storage` inserts a fixed owner invite email; `multi_tenant_platform` inserts the
+  Dumarwana platform settings and the Royal Bakery demo tenant. A fresh vendor database built from these
+  migrations would inherit all three, so vendor provisioning must not run them unchanged (tracked in
+  `docs/ux-overhaul/audit/master-audit-2026-10-24.md`, P1-4 and P1-6).
+- A clean apply of the full set to an empty database has **not been verified yet**.
+
 ---
 
 ## 13. Backup and restore

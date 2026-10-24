@@ -10,6 +10,7 @@ import { useCategoryArt, useWishIds } from "./data";
 import { demoOn } from "./demoMode";
 import { categoryIcon } from "./categoryIcon";
 import { primaryImage, type CardProduct } from "@/components/Product";
+import { lineIssue, minQty } from "@/lib/minQty";
 
 /** Neutral image well for products without a photo: the category's line icon, never a broken-image glyph. */
 export function ProductFallback({ categoryId, size = 40, className }: { categoryId?: string | null; size?: number; className?: string }) {
@@ -44,7 +45,8 @@ export function ProductCardV2({ p, locale, priority = false, className }: { p: C
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const available = p.stock_quantity - p.reserved_quantity;
-  const out = available <= 0;
+  const min = minQty(p.min_purchase_qty);
+  const out = lineIssue(min, available, min) === "out";
   const img = failed ? null : primaryImage(p);
   const name = pick(locale, p.name_en, p.name_ne);
   const avg = p.review_count ? p.rating_sum / p.review_count : 0;
@@ -55,7 +57,7 @@ export function ProductCardV2({ p, locale, priority = false, className }: { p: C
   const showWish = !canManage && !demoOn();
 
   const addOne = () => {
-    add(p.id, 1);
+    add(p.id, min);
     toast.success(t("product.added_named", { name }), { action: { label: t("cart.view"), onClick: () => nav("/cart") } });
   };
 
@@ -102,7 +104,7 @@ export function ProductCardV2({ p, locale, priority = false, className }: { p: C
           ) : null}
         </div>
         {!canManage && !out && inCart > 0 && (
-          <QtyStepper className="pop-in mt-1.5 w-full" size="sm" min={0} value={inCart} max={max} onChange={(n) => setQty(p.id, n)}
+          <QtyStepper className="pop-in mt-1.5 w-full" size="sm" min={0} floor={min} value={inCart} max={max} onChange={(n) => setQty(p.id, n)}
             labels={{ group: t("card.qty_in_cart", { name }), less: t("pdp.less"), more: t("pdp.more"), remove: t("cart.remove") }} />
         )}
       </div>

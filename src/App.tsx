@@ -15,15 +15,6 @@ import { useUiV2 } from "@/shell/useUiV2";
 import { ToastHost } from "@/ui";
 import { RequireAuth, RequireStaff } from "@/components/ui";
 
-// Local business network (directory, projects, about)
-import NetworkLayout from "@/network/NetworkLayout";
-import NetworkHome from "@/network/NetworkHome";
-import AboutPlatform from "@/network/AboutPlatform";
-
-// Individual business websites (/b/:slug)
-import BusinessLayout from "@/business/BusinessLayout";
-import BusinessHome from "@/business/BusinessHome";
-
 // Shop (the e-commerce store, legacy v1 and Bazaar Glass v2 variants)
 const HomeLegacy = lazy(() => import("@/pages/Home"));
 const HomeV2 = lazy(() => import("@/catalog/HomeV2"));
@@ -44,16 +35,6 @@ const AccountV2 = lazy(() => import("@/account/AccountV2"));
 import Wishlist from "@/pages/Wishlist";
 import Addresses from "@/pages/Addresses";
 import Invoice from "@/pages/Invoice";
-
-// Business owner dashboard for a /b/:slug website (code-split)
-const DashboardLayout = lazy(() => import("@/dashboard/DashboardLayout"));
-const DashboardHome = lazy(() => import("@/dashboard/DashboardHome"));
-const ProfileEditor = lazy(() => import("@/dashboard/ProfileEditor"));
-const ServicesEditor = lazy(() => import("@/dashboard/ServicesEditor"));
-const GalleryEditor = lazy(() => import("@/dashboard/GalleryEditor"));
-const HoursEditor = lazy(() => import("@/dashboard/HoursEditor"));
-const InquiriesView = lazy(() => import("@/dashboard/InquiriesView"));
-const SettingsEditor = lazy(() => import("@/dashboard/SettingsEditor"));
 
 // The shop admin is code-split so shoppers never download it.
 // Dev-only primitives gallery (not part of the production bundle: the route is added only in DEV).
@@ -102,41 +83,6 @@ const queryClient = new QueryClient();
 const lazyEl = (el: React.ReactNode) => <Suspense fallback={<PageSkeleton />}>{el}</Suspense>;
 
 const router = createBrowserRouter([
-  // Local business network: directory, projects and about
-  {
-    path: "/network",
-    element: <NetworkLayout />,
-    errorElement: <RouteError />,
-    children: [
-      { index: true, element: <NetworkHome /> },
-      { path: "about", element: <AboutPlatform /> },
-    ],
-  },
-
-  // Individual business website (/b/:slug)
-  {
-    path: "/b/:slug",
-    element: <BusinessLayout />,
-    errorElement: <RouteError />,
-    children: [{ index: true, element: <BusinessHome /> }],
-  },
-
-  // Business owner dashboard for a /b/:slug website
-  {
-    path: "/dashboard",
-    element: <RequireAuth>{lazyEl(<DashboardLayout />)}</RequireAuth>,
-    errorElement: <RouteError />,
-    children: [
-      { index: true, element: lazyEl(<DashboardHome />) },
-      { path: "profile", element: lazyEl(<ProfileEditor />) },
-      { path: "services", element: lazyEl(<ServicesEditor />) },
-      { path: "gallery", element: lazyEl(<GalleryEditor />) },
-      { path: "hours", element: lazyEl(<HoursEditor />) },
-      { path: "inquiries", element: lazyEl(<InquiriesView />) },
-      { path: "settings", element: lazyEl(<SettingsEditor />) },
-    ],
-  },
-
   // The shop, at its original paths
   {
     element: <Shell />,

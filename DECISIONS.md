@@ -621,3 +621,17 @@ Status of every entry below: **Proposed** (drafted in Phase 0, 20 Oct 2026, awai
 **Risks:** A supabase-js upgrade could call a new Realtime method (the stub would throw or no-op); mitigated by the `npm run build` and unit/e2e checks and by pinning supabase-js minor versions. Phase 7 must not use `supabase.channel()` from the shared client.
 
 **Revisit:** If supabase-js makes Realtime lazy or optional.
+
+---
+
+## UX-D022: The vendor directory is a separate control-plane app with its own database
+
+**Status:** Accepted by the owner (24 Oct 2026). Implements D-001 for the directory.
+
+**Context:** `multi_tenant_platform` put `tenants`, `tenant_*` and `platform_settings` into each shop database and `/network`, `/b/:slug`, `/dashboard` into the shop bundle. That mixed a shared-database tenant model with the per-vendor-database shop (audit P1-3) and carried the P0-2, P1-1 and P1-2 security defects.
+
+**Decision:** The directory lives in `platform-app/` (own Vite config, `.env`, Supabase project and migrations in `platform-app/supabase/`). It imports only design-system, i18n and theme code from `src/`; auth is its own `platform-app/src/auth.tsx`. Creating, activating and assigning businesses is done only by `platform_*` RPCs that check `platform_admins`. The shop keeps one vendor per Supabase project and no longer contains directory code or routes.
+
+**Result:** shop initial JS 201.4 to 188.9 kB gzip; `npm run check` also typechecks, tests and builds the platform app.
+
+**Open:** the shop database still holds the old `tenants` tables (2 seed rows) from an applied migration. Dropping them is destructive and needs owner approval after the control-plane project exists. The platform app has no live Supabase project yet, so it has not been run against data.
