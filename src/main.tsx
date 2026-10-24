@@ -2,9 +2,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
-import { applyUiOverride } from "./shell/useUiV2";
-
-applyUiOverride(); // ?ui=v2 | v1 | reset (QA and demos)
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
