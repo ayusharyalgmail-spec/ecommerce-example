@@ -8,3 +8,7 @@ describe("safeNext", () => {
   it.each([null, "", "https://evil.example", "//evil.example", "/\\evil.example", "javascript:alert(1)"])(
     "falls back to /dashboard for %s", (v) => expect(safeNext(v)).toBe("/dashboard"));
 });
+
+describe("safeNext fallback", () => {
+  it("uses the caller's fallback", () => expect(safeNext("//x", "/")).toBe("/"));
+});

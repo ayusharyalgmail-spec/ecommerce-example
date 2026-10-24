@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useCategories } from "@/lib/queries";
 import { ImageError, prepareImage } from "@/lib/image";
 import { randomUUID } from "@/lib/uuid";
+import { tenantPath } from "@/lib/tenantScope";
 import { MsgError, type FeedItem } from "@/messaging/api";
 import { staffApi, type Campaign, type CampaignInput } from "@/messaging/staffApi";
 import { safeCta } from "@/messaging/format";
@@ -53,7 +54,7 @@ function Editor({ kind, initial, onClose }: { kind: Campaign["kind"]; initial: F
     setAlert(null); setBusy("upload");
     try {
       const p = await prepareImage(file, 1600);
-      const path = `messages/${randomUUID()}.${p.ext}`;
+      const path = tenantPath(`messages/${randomUUID()}.${p.ext}`);
       const { error } = await supabase.storage.from("store-assets").upload(path, p.blob, { contentType: p.blob.type });
       if (error) throw error;
       if (f.image && f.image !== saved) drop(f.image); // an upload from this session that was replaced

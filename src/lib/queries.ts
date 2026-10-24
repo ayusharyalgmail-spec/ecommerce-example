@@ -1,7 +1,8 @@
 // Shared, de-duplicated queries (TanStack Query). Cache policy per docs/ux-overhaul/ARCHITECTURE.md 7.1.
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { DEMO_ALLOWED, demoOn } from "@/catalog/demoMode";
+import { useTenantKey } from "@/platform/TenantContext";
 
 export const TEN_MIN = 10 * 60_000;
 
@@ -9,8 +10,9 @@ export type Category = { id: string; slug: string; name_en: string; name_ne: str
 
 /** Categories change rarely and are used by Home and Shop: one request, shared and cached for 10 minutes. */
 export function useCategories() {
+  const tk = useTenantKey();
   return useQuery({
-    queryKey: ["categories"],
+    queryKey: [tk, "categories"],
     staleTime: TEN_MIN,
     queryFn: async (): Promise<Category[]> => {
       if (DEMO_ALLOWED && demoOn()) return (await import("@/catalog/demo")).categories;
@@ -26,8 +28,9 @@ export type DeliveryZone = { id: string; name_en: string; name_ne: string | null
 /** What the shop actually offers (active delivery zones, cash on delivery), so marketing copy never over-promises.
  *  Both are public reads that checkout already relies on. */
 export function useServiceInfo() {
+  const tk = useTenantKey();
   return useQuery({
-    queryKey: ["service-info"],
+    queryKey: [tk, "service-info"],
     staleTime: TEN_MIN,
     queryFn: async () => {
       const [z, s] = await Promise.all([
@@ -41,8 +44,9 @@ export function useServiceInfo() {
 }
 
 export function useStoreSettings() {
+  const tk = useTenantKey();
   return useQuery({
-    queryKey: ["settings", "public"],
+    queryKey: [tk, "settings", "public"],
     staleTime: TEN_MIN,
     queryFn: async () => {
       const { data, error } = await supabase.from("store_settings").select("store_name,brand,ui_v2,contact_phone,whatsapp_number,contact_email,policies").single();
@@ -55,3 +59,7 @@ export function useStoreSettings() {
     },
   });
 }
+
+/** Invalidate a shared query by its name, whether or not its key carries the tenant segment. */
+export const invalidateShared = (qc: QueryClient, name: string) =>
+  qc.invalidateQueries({ predicate: (q) => q.queryKey[0] === name || q.queryKey[1] === name });

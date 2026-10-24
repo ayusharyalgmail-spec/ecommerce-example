@@ -115,6 +115,7 @@
   "admin.stock": "Stock",
   "admin.price": "Price (Rs.)",
   "admin.discount_price": "Discount price (Rs.)",
+  "admin.unauthorized_store": "Unauthorized for this store",
   "admin.denied": "You do not have access to the dashboard.",
   "admin.risk": "Risk flags",
   "admin.store_name": "Store name",

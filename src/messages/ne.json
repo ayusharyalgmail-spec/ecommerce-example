@@ -115,6 +115,7 @@
   "admin.stock": "स्टक",
   "admin.price": "मूल्य (रु.)",
   "admin.discount_price": "छुट मूल्य (रु.)",
+  "admin.unauthorized_store": "यो पसलका लागि अनधिकृत",
   "admin.denied": "तपाईंलाई ड्यासबोर्डमा पहुँच छैन।",
   "admin.risk": "जोखिम संकेत",
   "admin.store_name": "पसलको नाम",

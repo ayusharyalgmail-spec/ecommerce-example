@@ -1,4 +1,6 @@
+import { invalidateShared } from "@/lib/queries";
 import { randomUUID } from "@/lib/uuid";
+import { tenantPath } from "@/lib/tenantScope";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge, Button, Card, Field, Input, Trash2, toast } from "@/ui";
@@ -13,7 +15,7 @@ import { BrandPanel } from "@/admin/BrandPanel";
 type Row = Banner & { sort_order: number; is_active: boolean };
 
 async function upload(folder: "banners" | "categories", file: File) {
-  const path = `${folder}/${randomUUID()}.webp`;
+  const path = tenantPath(`${folder}/${randomUUID()}.webp`);
   const { error } = await supabase.storage.from("store-assets").upload(path, await toWebp(file, 1600), { contentType: "image/webp" });
   if (error) throw new Error(error.message);
   return path;
@@ -27,7 +29,7 @@ export default function Storefront() {
   useTitle(t("admin.storefront"));
   const banners = useQuery(async () => ((await supabase.from("banners").select(`${BANNER_COLUMNS},sort_order,is_active`).order("sort_order")).data ?? []) as Row[], []);
   const cats = useQuery(async () => (await supabase.from("categories").select("id,slug,name_en,name_ne,image_path").order("sort_order")).data ?? [], []);
-  const refresh = () => { banners.reload(); cats.reload(); void qc.invalidateQueries({ queryKey: ["banners"] }); void qc.invalidateQueries({ queryKey: ["categories"] }); };
+  const refresh = () => { banners.reload(); cats.reload(); void invalidateShared(qc, "banners"); void invalidateShared(qc, "categories"); };
   const fail = (e: unknown) => toast.error(e instanceof Error ? e.message : t("common.error"));
 
   async function addBanner(e: React.FormEvent<HTMLFormElement>) {

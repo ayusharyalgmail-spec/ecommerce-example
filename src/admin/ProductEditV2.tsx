@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, buttonStyles, ChevronLeft, ChevronRight, Field, ImageOff, Input, SegmentedControl, Select, Skeleton, Star, Textarea, Trash2, IconButton, Upload, cn, toast } from "@/ui";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { useT } from "@/lib/i18n";
+import { useFeature } from "@/platform/TenantContext";
 import { adjustStock, deleteProductImage, saveProduct, setPrimaryImage, swapImageOrder, uploadProductImage } from "@/lib/api";
 import { paisaToRupees } from "@/lib/money";
 import { useTitle } from "@/components/ui";
@@ -31,6 +32,7 @@ export default function ProductEditV2() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const { t, locale } = useT();
+  const minOn = useFeature("min_order_qty");
   const file = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
@@ -139,7 +141,7 @@ export default function ProductEditV2() {
             <Field label={t("admin.category")}>{(a) => <Select {...a} value={f.category_id} onChange={set("category_id")}><option value="">{t("dash.uncategorised")}</option>{q.data?.cats.map((c) => <option key={c.id} value={c.id}>{c.name_en}</option>)}</Select>}</Field>
             <Field label={t("admin.sku")}>{(a) => <Input {...a} value={f.sku} onChange={set("sku")} />}</Field>
             {!p && <Field label={t("editor.opening_stock")}>{(a) => <Input {...a} type="number" inputMode="numeric" min="0" value={f.stock} onChange={set("stock")} />}</Field>}
-            <Field label={t("admin.min_purchase_qty")} hint={t("admin.min_purchase_qty_hint")}>{(a) => <Input {...a} type="number" min="1" step="1" value={f.min_purchase_qty} onChange={set("min_purchase_qty")} />}</Field>
+            {minOn && <Field label={t("admin.min_purchase_qty")} hint={t("admin.min_purchase_qty_hint")}>{(a) => <Input {...a} type="number" min="1" step="1" value={f.min_purchase_qty} onChange={set("min_purchase_qty")} />}</Field>}
             <div className="sm:col-span-2">
               <SegmentedControl<string> label={t("editor.visibility")} value={f.status} hint={t("editor.visibility_hint")}
                 onChange={(v) => setEdits((x) => ({ ...x, status: v }))}

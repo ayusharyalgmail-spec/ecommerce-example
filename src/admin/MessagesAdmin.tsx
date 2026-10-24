@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
+import { PageSkeleton } from "@/shell/PageSkeleton";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,7 +14,9 @@ import { staffApi, type InboxRow } from "@/messaging/staffApi";
 import { Bubble } from "@/messaging/ChatPanel";
 import { badgeText } from "@/messaging/format";
 import { accent } from "@/messaging/MessageCards";
-import { CampaignManager } from "./CampaignManager";
+import { useFeature } from "@/platform/TenantContext";
+// Campaigns are a heavy, optional module: only tenants with the feature download it.
+const CampaignManager = lazy(() => import("./CampaignManager").then((m) => ({ default: m.CampaignManager })));
 
 type Tab = "inbox" | "alert" | "promo";
 const FILTERS = ["all", "unread", "awaiting", "open", "resolved"] as const;
@@ -164,7 +167,8 @@ export default function MessagesAdmin() {
   const { perms } = useAuth();
   const [tab, setTab] = useState<Tab>("inbox");
   const [filter, setFilter] = useState<Filter>("all");
-  const canManage = perms.has("messages.manage");
+  const campaignsOn = useFeature("campaigns");
+  const canManage = perms.has("messages.manage") && campaignsOn;
   const ov = useQuery({ queryKey: ["admin", "msg", "overview"], staleTime: 10_000, refetchInterval: () => (document.visibilityState === "visible" ? 30_000 : false), queryFn: staffApi.overview });
   const go = (f: Filter) => { setTab("inbox"); setFilter(f); };
 
@@ -189,7 +193,7 @@ export default function MessagesAdmin() {
         <SegmentedControl label={t("admin.messages")} hideLabel value={tab} onChange={setTab}
           options={[{ value: "inbox", label: t("admin.msg.tab.inbox") }, { value: "alert", label: t("admin.msg.tab.alert") }, { value: "promo", label: t("admin.msg.tab.promo") }]} />
       )}
-      {tab === "inbox" ? <Inbox2 filter={filter} setFilter={setFilter} /> : <CampaignManager kind={tab} />}
+      {tab === "inbox" ? <Inbox2 filter={filter} setFilter={setFilter} /> : <Suspense fallback={<PageSkeleton />}><CampaignManager kind={tab} /></Suspense>}
     </div>
   );
 }

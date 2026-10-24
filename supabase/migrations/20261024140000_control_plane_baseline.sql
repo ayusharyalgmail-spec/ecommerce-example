@@ -1,9 +1,10 @@
--- Control-plane baseline (platform-app). Its OWN Supabase project, never a vendor shop database.
--- Replaces the tenant tables that 20261021100516_multi_tenant_platform.sql put in the shop DB (audit P1-3).
--- Fixes carried in from the audit: P0-2 (tenant-scoped storage), P1-1 (no policy recursion),
--- P1-2 (no client INSERT/DELETE on tenants, content-column UPDATE only), P2-3, P2-4.
+-- Tenant hardening (formerly the platform-app control-plane baseline, now merged into the single Supabase project).
+-- Runs AFTER 20261021100516_multi_tenant_platform.sql, which created the tenant tables with weak policies
+-- (owner FOR ALL, any authenticated user may write tenant-assets). This file drops every policy on those tables
+-- and recreates the hardened set, so it is safe to re-run. Fixes: P0-2 (tenant-scoped storage), P1-1 (no policy
+-- recursion), P1-2 (no client INSERT/DELETE on tenants, content-column UPDATE only), P2-3, P2-4.
 -- No vendor seed data here: see ../seed.sql (development only).
--- NOT APPLIED anywhere yet. Apply to a new, empty control-plane project only.
+-- NOT APPLIED to any live database. Review, then apply together with the owner.
 
 create schema if not exists app_private;
 grant usage on schema app_private to anon, authenticated;
@@ -37,6 +38,7 @@ create index if not exists idx_tenants_owner on public.tenants (owner_id);
 create or replace function public.set_tenant_updated_at() returns trigger
 language plpgsql set search_path = ''
 as $$ begin new.updated_at = now(); return new; end $$;
+drop trigger if exists trg_tenants_updated on public.tenants;
 create trigger trg_tenants_updated before update on public.tenants
   for each row execute function public.set_tenant_updated_at();
 
@@ -143,6 +145,13 @@ grant execute on function app_private.is_platform_admin(), app_private.is_tenant
   app_private.is_tenant_owner(uuid), app_private.tenant_is_active(uuid) to anon, authenticated;
 
 -- ============================================================ RLS
+-- Drop every existing policy on the tenant tables and the tenant-assets storage policies (idempotent re-creation).
+do $$ declare r record; begin
+  for r in select schemaname, tablename, policyname from pg_policies
+    where (schemaname = 'public' and tablename in ('tenants','tenant_hours','tenant_services','tenant_gallery','tenant_inquiries','tenant_staff','platform_settings','tenant_analytics','platform_admins'))
+       or (schemaname = 'storage' and tablename = 'objects' and policyname like 'tenant_assets_%')
+  loop execute format('drop policy if exists %I on %I.%I', r.policyname, r.schemaname, r.tablename); end loop;
+end $$;
 alter table public.tenants           enable row level security;
 alter table public.tenant_hours      enable row level security;
 alter table public.tenant_services   enable row level security;

@@ -5,11 +5,13 @@ import { Alert, Button, buttonStyles, ChevronLeft, ChoiceCard, EmptyState, Field
 import { demoOn } from "@/catalog/demoMode";
 import { useCart } from "@/lib/cart";
 import { useT, pick } from "@/lib/i18n";
+import { useFeature } from "@/platform/TenantContext";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { placeOrder, quoteCheckout, type Quote } from "@/lib/api";
 import { prepareImage } from "@/lib/image";
 import { randomUUID } from "@/lib/uuid";
+import { tenantPath } from "@/lib/tenantScope";
 import { formatNpr } from "@/lib/money";
 import { useTitle } from "@/components/ui";
 import { PAGE_X } from "@/catalog/layout";
@@ -30,6 +32,7 @@ const readDraft = (): { f: Fields; zoneId: string; payment: "cod" | "manual"; st
 export default function CheckoutV2() {
   const { items, clear } = useCart();
   const { t, locale } = useT();
+  const couponsOn = useFeature("coupons");
   const { user } = useAuth();
   const nav = useNavigate();
   useTitle(t("checkout.title"));
@@ -116,7 +119,7 @@ export default function CheckoutV2() {
     setError(null);
     try {
       const prepared = await prepareImage(file, 1200);
-      const path = `proofs/pre_${randomUUID()}.${prepared.ext}`;
+      const path = tenantPath(`proofs/pre_${randomUUID()}.${prepared.ext}`);
       const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, prepared.blob, { contentType: `image/${prepared.ext === "webp" ? "webp" : "jpeg"}` });
       if (upErr) throw upErr;
       setProofPath(path);
@@ -324,13 +327,13 @@ export default function CheckoutV2() {
                   {payment === "manual" && proofPath && `, ${t("checkout.proof_attached")}`}
                 </ReviewRow>
               </dl>
-              <div className="flex items-end gap-2">
+              {couponsOn && <div className="flex items-end gap-2">
                 <Field label={t("checkout.coupon")} className="flex-1">
                   {(a) => <Input {...a} value={coupon} onChange={(e) => setCoupon(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setApplied(coupon.trim()); } }} autoCapitalize="characters" />}
                 </Field>
                 <Button type="button" variant="secondary" onClick={() => setApplied(coupon.trim())}>{t("checkout.apply")}</Button>
-              </div>
-              {applied && <p className="m-0 text-sm text-muted">{t("checkout.coupon_applied", { code: applied })}</p>}
+              </div>}
+              {couponsOn && applied && <p className="m-0 text-sm text-muted">{t("checkout.coupon_applied", { code: applied })}</p>}
               <div className="rounded-lg border border-line bg-surface p-4 md:hidden">{totals}</div>
             </section>
           )}

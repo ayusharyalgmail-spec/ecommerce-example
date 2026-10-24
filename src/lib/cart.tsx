@@ -11,10 +11,10 @@ type CartCtx = {
   clear: () => void;
 };
 
-const KEY = "cart.v1";
+const BASE_KEY = "cart.v1";
 const Ctx = createContext<CartCtx | null>(null);
 
-function load(): CartItem[] {
+function load(KEY: string): CartItem[] {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return [];
@@ -24,19 +24,21 @@ function load(): CartItem[] {
   } catch { return []; }
 }
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(load);
+/** `scope` (the tenant slug) keeps one cart per store; the flagship keeps the original key so existing carts survive. */
+export function CartProvider({ children, scope }: { children: React.ReactNode; scope?: string | null }) {
+  const KEY = scope && scope !== "ecommerce" ? `${BASE_KEY}:${scope}` : BASE_KEY;
+  const [items, setItems] = useState<CartItem[]>(() => load(KEY));
 
   useEffect(() => {
     try { localStorage.setItem(KEY, JSON.stringify({ items, at: Date.now() })); } catch { /* private mode */ }
-  }, [items]);
+  }, [items, KEY]);
 
   // Keep several open tabs in sync.
   useEffect(() => {
-    const onStorage = (e: StorageEvent) => { if (e.key === KEY) setItems(load()); };
+    const onStorage = (e: StorageEvent) => { if (e.key === KEY) setItems(load(KEY)); };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [KEY]);
 
   const add = useCallback((productId: string, qty = 1) =>
     setItems((cur) => {

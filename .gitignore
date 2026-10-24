@@ -53,4 +53,8 @@ next-env.d.ts
 # local browser QA artifacts
 .playwright-mcp/
 
-dist-platform
+
+# archives and local env
+*.rar
+*.zip
+.env.local

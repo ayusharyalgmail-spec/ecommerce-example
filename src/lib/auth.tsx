@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { useTenantKey } from "@/platform/TenantContext";
 
 // Mirrors app_private.role_permissions in SQL (DATABASE.md §11). Hiding UI is cosmetic only:
 // every table has row-level security and every sensitive RPC re-checks the permission.
@@ -26,12 +27,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [perms, setPerms] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  // Permissions are per store: re-read them whenever the active tenant changes (the x-tenant-id header changes with it).
+  const tenantKey = useTenantKey();
 
   const loadPerms = useCallback(async (u: User | null) => {
     if (!u) { setPerms(new Set()); return; }
     const { data } = await supabase.from("staff_members").select("role,permissions,is_active").eq("user_id", u.id).maybeSingle();
     setPerms(data?.is_active ? new Set([...(BY_ROLE[data.role] ?? []), ...(data.permissions ?? [])]) : new Set());
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantKey]);
 
   const refresh = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -43,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let alive = true;
     // Initial session load: the state updates happen after an awaited network call, not synchronously.
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
     refresh().finally(() => alive && setLoading(false));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       // Defer: calling Supabase inside this callback can deadlock the auth lock.

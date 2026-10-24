@@ -1,3 +1,4 @@
+import { invalidateShared } from "@/lib/queries";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge, Button, Card, ChevronDown, EmptyState, Field, IconButton, Input, Package, Plus, Skeleton, Switch, Trash2, toast } from "@/ui";
@@ -24,7 +25,7 @@ export default function Categories() {
       return (data ?? []) as unknown as Cat[];
     },
   });
-  const refresh = () => { void qc.invalidateQueries({ queryKey: ["admin", "categories"] }); void qc.invalidateQueries({ queryKey: ["categories"] }); };
+  const refresh = () => { void qc.invalidateQueries({ queryKey: ["admin", "categories"] }); void invalidateShared(qc, "categories"); };
   const fail = (m: string) => toast.error(m);
 
   async function add(e: React.FormEvent<HTMLFormElement>) {

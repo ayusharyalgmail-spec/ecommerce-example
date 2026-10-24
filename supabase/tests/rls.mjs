@@ -1,11 +1,11 @@
 // RLS regression test for the control-plane baseline migration, run in-memory with PGlite and stubbed auth/storage.
-// Run: npm i --no-save @electric-sql/pglite && node platform-app/supabase/tests/rls.mjs
+// Run: npm i --no-save @electric-sql/pglite && node supabase/tests/rls.mjs
 // Covers policies and grants only. It does NOT test Supabase Auth, real storage, or realtime: repeat on a real project.
 import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import fs from "node:fs";
 
-const MIG = path.resolve(import.meta.dirname, "../migrations/20261024140000_control_plane_baseline.sql");
+const MIGS = ["20261021100516_multi_tenant_platform.sql", "20261024140000_control_plane_baseline.sql"].map((f) => path.resolve(import.meta.dirname, "../migrations", f));
 const db = new PGlite();
 
 // ---- Supabase stubs (auth, storage, roles, default grants) -------------------------------------------------
@@ -36,8 +36,10 @@ await db.exec(`
 `);
 
 // ---- apply the real migration -----------------------------------------------------------------------------
-await db.exec(fs.readFileSync(MIG, "utf8"));
-console.log("migration applied without error\n");
+for (const m of MIGS) await db.exec(fs.readFileSync(m, "utf8"));
+// The applied multi_tenant_platform migration also inserts the Royal Bakery demo tenant; the fixtures below assume a clean slate.
+await db.exec("delete from public.tenants where slug = 'royal-bakery'");
+console.log("both tenant migrations applied in order without error\n");
 
 // ---- fixtures (superuser) ---------------------------------------------------------------------------------
 const U = { owner: "00000000-0000-0000-0000-0000000000a1", editor: "00000000-0000-0000-0000-0000000000a2",

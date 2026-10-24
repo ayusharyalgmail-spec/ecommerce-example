@@ -405,3 +405,28 @@ See DATABASE.md section 13 and DEPLOYMENT.md. Summary: paid-plan provider backup
 2. `pg_net` reachability and timing guarantees to be verified (**Phase 6**). Fallback scheduler is documented above.
 3. Whether the demo deployment on Vercel Hobby is acceptable under Vercel's terms is to be confirmed or avoided by paying for the demo project (**before first vendor demo**).
 4. Optional error tracking tool: undecided (**optional enhancement**).
+
+
+---
+
+## 22. Unified multi-tenant runtime (supersedes the separate `platform-app`)
+
+One Vite app, one Supabase project. `platform-app/` is gone; its directory, business-page and dashboard code now lives in `src/network`, `src/business`, `src/dashboard` and `src/platform`.
+
+```mermaid
+flowchart TD
+  L[page load] --> R[resolveTenantRef: path /s/slug, ?tenant=, subdomain, custom domain, remembered tab tenant]
+  R -->|hub| H[Hub router: /network, /b/:slug, /dashboard, /platform-admin]
+  R -->|slug or domain| T[TenantProvider: get_tenant_by_slug / get_tenant_by_domain]
+  T -->|found| S[Store router: shop + /admin, brand via BrandLoader, features via useFeature]
+  T -->|ecommerce missing or offline| F[flagship fallback: all features, demo fixture in dev]
+  T -->|vendor missing or not active| N[Store not found page]
+```
+
+- **Resolver** `src/platform/resolve.ts` (pure, unit-tested) and `TenantContext.tsx`. `useTenant()` returns `{mode: 'hub' | 'store', tenant, tenantId, slug, isLoading, error, hasFeature}`. `/s/:slug` becomes the router basename so every in-app link stays inside the store.
+- **Isolation in the browser**: each tenant gets its own React Query cache (`clientFor`) and its own cart key (`cart.v1:<slug>`; the flagship keeps `cart.v1`); the shared queries in `src/lib/queries.ts` also carry the tenant in their keys. Nothing cached for one store can render in another.
+- **Isolation in the database**: the Supabase client adds `x-tenant-id` once the tenant id is known; Postgres scopes every store table to it (SECURITY.md section 17). Before the tenant is known, and for the offline flagship, requests are identical to the pre-multi-tenant ones, so an un-migrated database keeps working.
+- **Feature flags** `src/platform/features.ts`: typed `TenantFeatures` (`coupons, campaigns, ledger, messaging, min_order_qty, reviews, pos_export`); `useFeature(key)`. Gated: admin nav and command palette, routes (`FeatureGate`), the Header and BottomNav messages entry, the checkout coupon box, the minimum-quantity UI and server rule. Heavy modules (Money, Messages, CampaignManager, Coupons, ImportExport) are `React.lazy` chunks that a tenant without the feature never downloads. Flags are advisory in the UI; the server enforces coupons and minimum quantity.
+- **Platform admin** `src/platform/PlatformAdmin.tsx`: hub only, calls `is_platform_admin()` then the `platform_*` RPCs.
+- **Storage**: new objects are written under `<tenant_id>/` (`tenantPath`), enforced by storage RLS.
+- **Canonical UI**: the V2 screens are the only storefront and admin; the old V1 pages and the `ui_v2` flag were removed.

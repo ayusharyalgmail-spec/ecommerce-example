@@ -7,7 +7,7 @@ import { useStoreSettings } from "@/lib/queries";
 import { Alert, Button, Field, Input, Mail } from "@/ui";
 import { StoreMark } from "@/shell/Header";
 
-const safeNext = (n: string) => (n.startsWith("/") && !n.startsWith("//") ? n : "/");
+import { safeNext } from "@/lib/safeNext";
 
 /** Google's "G" mark, drawn inline so the button needs no external asset. */
 function GoogleMark() {
@@ -25,7 +25,7 @@ export default function Login() {
   const { t } = useT();
   const [sp] = useSearchParams();
   const store = useStoreSettings().data;
-  const next = safeNext(sp.get("next") ?? "/");
+  const next = safeNext(sp.get("next"), "/");
   useTitle(t("auth.title"));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(sp.get("error") ? { ok: false, text: sp.get("error")! } : null);

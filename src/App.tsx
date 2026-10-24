@@ -1,61 +1,67 @@
 import { lazy, Suspense } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider, loadMsgMessages, useT } from "@/lib/i18n";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 import { BrandLoader } from "@/theme/BrandLoader";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
-import Layout from "@/components/Chrome";
 import AppLayout from "@/shell/AppLayout";
 import { RouteError } from "@/shell/RouteError";
 import { NotFound } from "@/shell/NotFound";
 import { PageSkeleton } from "@/shell/PageSkeleton";
-import { useUiV2 } from "@/shell/useUiV2";
 import { ToastHost } from "@/ui";
 import { RequireAuth, RequireStaff } from "@/components/ui";
+import { TenantProvider, useTenant } from "@/platform/TenantContext";
+import type { FeatureKey } from "@/platform/features";
+import { basenameFor, resolveTenantRef } from "@/platform/resolve";
+import { FeatureGate, StoreGate } from "@/platform/StoreGate";
 
-// Shop (the e-commerce store, legacy v1 and Bazaar Glass v2 variants)
-const HomeLegacy = lazy(() => import("@/pages/Home"));
+// Shop (Bazaar Glass v2 is the only storefront)
 const HomeV2 = lazy(() => import("@/catalog/HomeV2"));
-const ShopLegacy = lazy(() => import("@/pages/Shop"));
 const ShopV2 = lazy(() => import("@/catalog/ShopV2"));
-const ProductLegacy = lazy(() => import("@/pages/ProductPage"));
 const ProductV2 = lazy(() => import("@/catalog/ProductPageV2"));
-const CartLegacy = lazy(() => import("@/pages/Cart"));
 const CartV2 = lazy(() => import("@/checkout/CartV2"));
-const CheckoutLegacy = lazy(() => import("@/pages/Checkout"));
 const CheckoutV2 = lazy(() => import("@/checkout/CheckoutV2"));
-const TrackLegacy = lazy(() => import("@/pages/Track"));
 const TrackV2 = lazy(() => import("@/account/TrackV2"));
 const Login = lazy(() => import("@/pages/Login"));
 import AuthCallback from "@/pages/AuthCallback";
-const AccountLegacy = lazy(() => import("@/pages/Account"));
 const AccountV2 = lazy(() => import("@/account/AccountV2"));
 import Wishlist from "@/pages/Wishlist";
 import Addresses from "@/pages/Addresses";
 import Invoice from "@/pages/Invoice";
+
+const NetworkLayout = lazy(() => import("@/network/NetworkLayout"));
+const NetworkHome = lazy(() => import("@/network/NetworkHome"));
+const AboutPlatform = lazy(() => import("@/network/AboutPlatform"));
+const BusinessLayout = lazy(() => import("@/business/BusinessLayout"));
+const BusinessHome = lazy(() => import("@/business/BusinessHome"));
+// Hub pages are lazy chunks too.
+// The hub dashboard (vendor profile editors) is code-split so directory visitors never download it.
+const PlatformAdmin = lazy(() => import("@/platform/PlatformAdmin"));
+const DashboardLayout = lazy(() => import("@/dashboard/DashboardLayout"));
+const DashboardHome = lazy(() => import("@/dashboard/DashboardHome"));
+const ProfileEditor = lazy(() => import("@/dashboard/ProfileEditor"));
+const ServicesEditor = lazy(() => import("@/dashboard/ServicesEditor"));
+const GalleryEditor = lazy(() => import("@/dashboard/GalleryEditor"));
+const HoursEditor = lazy(() => import("@/dashboard/HoursEditor"));
+const InquiriesView = lazy(() => import("@/dashboard/InquiriesView"));
+const SettingsEditor = lazy(() => import("@/dashboard/SettingsEditor"));
 
 // The shop admin is code-split so shoppers never download it.
 // Dev-only primitives gallery (not part of the production bundle: the route is added only in DEV).
 const UiGallery = import.meta.env.DEV ? lazy(() => import("@/pages/UiGallery")) : null;
 const DevShells = import.meta.env.DEV ? lazy(() => import("@/pages/DevShells")) : null;
 const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
-const AdminHomeLegacy = lazy(() => import("@/pages/admin/AdminHome"));
 const DashboardV2 = lazy(() => import("@/admin/DashboardV2"));
 const AdminOrdersV2 = lazy(() => import("@/admin/OrdersV2"));
-const AdminOrdersLegacy = lazy(() => import("@/pages/admin/Orders"));
-const AdminOrderLegacy = lazy(() => import("@/pages/admin/OrderDetail"));
 const OrderDetailV2 = lazy(() => import("@/admin/OrderDetailV2"));
-const AdminProductsLegacy = lazy(() => import("@/pages/admin/Products"));
 const ProductsV2 = lazy(() => import("@/admin/ProductsV2"));
-const AdminProductEditLegacy = lazy(() => import("@/pages/admin/ProductEdit"));
 const ProductEditV2 = lazy(() => import("@/admin/ProductEditV2"));
 const AdminReviews = lazy(() => import("@/pages/admin/Reviews"));
 const AdminCoupons = lazy(() => import("@/pages/admin/Coupons"));
 const AdminZones = lazy(() => import("@/pages/admin/Zones"));
 const AdminMoney = lazy(() => import("@/pages/admin/Money"));
-const AdminReportsLegacy = lazy(() => import("@/pages/admin/Reports"));
 const ReportsV2 = lazy(() => import("@/admin/ReportsV2"));
 const AdminImport = lazy(() => import("@/pages/admin/ImportExport"));
 const AdminStaff = lazy(() => import("@/pages/admin/Staff"));
@@ -67,37 +73,34 @@ const AdminMessages = lazy(() => import("@/admin/MessagesAdmin"));
 // Customer Messages replaces Track order in the navigation; /track itself is unchanged.
 const MessagesPage = lazy(() => loadMsgMessages().then(() => import("@/messaging/MessagesPage")));
 
-/** ui_v2 flag (UX-D020): vendors on the flag get the Bazaar Glass shell, everyone else keeps the current one. */
-function Shell() {
-  return useUiV2() ? <AppLayout /> : <Layout />;
-}
+/** Platform-level cache (tenant lookup only). Each tenant then gets its own cache inside TenantProvider. */
+const platformClient = new QueryClient();
 
-/** Picks the v1 or v2 screen by the ui_v2 flag; both are lazy chunks so neither counts against the entry budget. */
-function Routed({ v1, v2 }: { v1: React.ReactNode; v2: React.ReactNode }) {
-  const on = useUiV2();
-  return <Suspense fallback={<PageSkeleton />}>{on ? v2 : v1}</Suspense>;
-}
-
-const queryClient = new QueryClient();
+const safeSession = () => { try { return window.sessionStorage; } catch { return null; } };
+/** Resolved once per page load: the tenant never changes without a navigation that reloads the app. */
+const tenantRef = resolveTenantRef(window.location, import.meta.env.VITE_ROOT_DOMAIN as string | undefined, safeSession());
+const isHub = tenantRef.kind === "hub";
 
 const lazyEl = (el: React.ReactNode) => <Suspense fallback={<PageSkeleton />}>{el}</Suspense>;
+/** A lazy route that only exists for tenants with the feature (the module is not even downloaded otherwise). */
+const gated = (feature: FeatureKey, el: React.ReactNode) => <FeatureGate feature={feature}>{lazyEl(el)}</FeatureGate>;
 
-const router = createBrowserRouter([
+const storeRoutes: RouteObject[] = [
   // The shop, at its original paths
   {
-    element: <Shell />,
+    element: <AppLayout />,
     errorElement: <RouteError />,
     children: [
-      { path: "/", element: <Routed v1={<HomeLegacy />} v2={<HomeV2 />} /> },
-      { path: "/shop", element: <Routed v1={<ShopLegacy />} v2={<ShopV2 />} /> },
-      { path: "/product/:slug", element: <Routed v1={<ProductLegacy />} v2={<ProductV2 />} /> },
-      { path: "/cart", element: <Routed v1={<CartLegacy />} v2={<CartV2 />} /> },
-      { path: "/checkout", element: <Routed v1={<CheckoutLegacy />} v2={<CheckoutV2 />} /> },
-      { path: "/track", element: <Routed v1={<TrackLegacy />} v2={<TrackV2 />} /> },
-      { path: "/messages", element: lazyEl(<MessagesPage />) },
+      { path: "/", element: lazyEl(<HomeV2 />) },
+      { path: "/shop", element: lazyEl(<ShopV2 />) },
+      { path: "/product/:slug", element: lazyEl(<ProductV2 />) },
+      { path: "/cart", element: lazyEl(<CartV2 />) },
+      { path: "/checkout", element: lazyEl(<CheckoutV2 />) },
+      { path: "/track", element: lazyEl(<TrackV2 />) },
+      { path: "/messages", element: gated("messaging", <MessagesPage />) },
       { path: "/login", element: lazyEl(<Login />) },
       { path: "/auth/callback", element: <AuthCallback /> },
-      { path: "/account", element: <RequireAuth><Routed v1={<AccountLegacy />} v2={<AccountV2 />} /></RequireAuth> },
+      { path: "/account", element: <RequireAuth>{lazyEl(<AccountV2 />)}</RequireAuth> },
       { path: "/account/wishlist", element: <RequireAuth><Wishlist /></RequireAuth> },
       { path: "/account/addresses", element: <RequireAuth><Addresses /></RequireAuth> },
       { path: "/orders/:id/invoice", element: <RequireAuth><Invoice /></RequireAuth> },
@@ -105,21 +108,21 @@ const router = createBrowserRouter([
         path: "/admin",
         element: <RequireStaff>{lazyEl(<AdminLayout />)}</RequireStaff>,
         children: [
-          { index: true, element: <Routed v1={<AdminHomeLegacy />} v2={<DashboardV2 />} /> },
-          { path: "orders", element: <Routed v1={<AdminOrdersLegacy />} v2={<AdminOrdersV2 />} /> },
-          { path: "orders/:id", element: <Routed v1={<AdminOrderLegacy />} v2={<OrderDetailV2 />} /> },
-          { path: "products", element: <Routed v1={<AdminProductsLegacy />} v2={<ProductsV2 />} /> },
-          { path: "products/new", element: <Routed v1={<AdminProductEditLegacy />} v2={<ProductEditV2 />} /> },
-          { path: "products/:id", element: <Routed v1={<AdminProductEditLegacy />} v2={<ProductEditV2 />} /> },
-          { path: "reviews", element: lazyEl(<AdminReviews />) },
-          { path: "coupons", element: lazyEl(<AdminCoupons />) },
+          { index: true, element: lazyEl(<DashboardV2 />) },
+          { path: "orders", element: lazyEl(<AdminOrdersV2 />) },
+          { path: "orders/:id", element: lazyEl(<OrderDetailV2 />) },
+          { path: "products", element: lazyEl(<ProductsV2 />) },
+          { path: "products/new", element: lazyEl(<ProductEditV2 />) },
+          { path: "products/:id", element: lazyEl(<ProductEditV2 />) },
+          { path: "reviews", element: gated("reviews", <AdminReviews />) },
+          { path: "coupons", element: gated("coupons", <AdminCoupons />) },
           { path: "zones", element: lazyEl(<AdminZones />) },
-          { path: "money", element: lazyEl(<AdminMoney />) },
-          { path: "messages", element: lazyEl(<AdminMessages />) },
+          { path: "money", element: gated("ledger", <AdminMoney />) },
+          { path: "messages", element: gated("messaging", <AdminMessages />) },
           { path: "categories", element: lazyEl(<AdminCategories />) },
           { path: "storefront", element: lazyEl(<AdminStorefront />) },
-          { path: "reports", element: <Routed v1={<AdminReportsLegacy />} v2={<ReportsV2 />} /> },
-          { path: "import", element: lazyEl(<AdminImport />) },
+          { path: "reports", element: lazyEl(<ReportsV2 />) },
+          { path: "import", element: gated("pos_export", <AdminImport />) },
           { path: "staff", element: lazyEl(<AdminStaff />) },
           { path: "audit", element: lazyEl(<AdminAudit />) },
           { path: "settings", element: lazyEl(<AdminSettings />) },
@@ -130,25 +133,60 @@ const router = createBrowserRouter([
       { path: "*", element: <NotFound /> },
     ],
   },
-]);
+];
+
+/** Hub: the vendor directory, public business pages and the vendor dashboard. */
+const hubRoutes: RouteObject[] = [
+  { path: "/", element: <Navigate to="/network" replace /> },
+  { path: "/network", element: lazyEl(<NetworkLayout />), errorElement: <RouteError />, children: [{ index: true, element: lazyEl(<NetworkHome />) }, { path: "about", element: lazyEl(<AboutPlatform />) }] },
+  { path: "/b/:slug", element: lazyEl(<BusinessLayout />), errorElement: <RouteError />, children: [{ index: true, element: lazyEl(<BusinessHome />) }] },
+  { path: "/login", element: lazyEl(<Login />), errorElement: <RouteError /> },
+  { path: "/auth/callback", element: <AuthCallback /> },
+  { path: "/platform-admin", element: <RequireAuth>{lazyEl(<PlatformAdmin />)}</RequireAuth>, errorElement: <RouteError /> },
+  {
+    path: "/dashboard", element: <RequireAuth>{lazyEl(<DashboardLayout />)}</RequireAuth>, errorElement: <RouteError />,
+    children: [
+      { index: true, element: lazyEl(<DashboardHome />) },
+      { path: "profile", element: lazyEl(<ProfileEditor />) },
+      { path: "services", element: lazyEl(<ServicesEditor />) },
+      { path: "gallery", element: lazyEl(<GalleryEditor />) },
+      { path: "hours", element: lazyEl(<HoursEditor />) },
+      { path: "inquiries", element: lazyEl(<InquiriesView />) },
+      { path: "settings", element: lazyEl(<SettingsEditor />) },
+    ],
+  },
+  { path: "*", element: <NotFound /> },
+];
+
+const router = createBrowserRouter(isHub ? hubRoutes : storeRoutes, { basename: basenameFor(tenantRef) });
 
 function Toasts() {
   const { t } = useT();
   return <ToastHost closeLabel={t("common.close")} />;
 }
 
+/** Store-only providers: cart (one per store), brand colour, and the not-found/loading gate. */
+function StoreApp() {
+  const { slug } = useTenant();
+  return (
+    <CartProvider scope={slug}>
+      <BrandLoader />
+      <StoreGate><RouterProvider router={router} /></StoreGate>
+    </CartProvider>
+  );
+}
+
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={platformClient}>
       <ThemeProvider>
-        <BrandLoader />
         <I18nProvider>
-          <AuthProvider>
-            <CartProvider>
-              <RouterProvider router={router} />
+          <TenantProvider tenantRef={tenantRef}>
+            <AuthProvider>
+              {isHub ? <RouterProvider router={router} /> : <StoreApp />}
               <Toasts />
-            </CartProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </TenantProvider>
         </I18nProvider>
       </ThemeProvider>
     </QueryClientProvider>

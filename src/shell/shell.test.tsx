@@ -20,7 +20,6 @@ import { Footer } from "./Footer";
 import { AppearancePanel } from "./AppearancePanel";
 import { NotFound } from "./NotFound";
 import { useShortcuts } from "./useShortcuts";
-import { useUiV2, applyUiOverride } from "./useUiV2";
 
 const wrap = (ui: React.ReactNode, path = "/") => (
   <QueryClientProvider client={new QueryClient()}>
@@ -113,22 +112,3 @@ describe("keyboard shortcuts", () => {
   });
 });
 
-describe("ui_v2 flag resolution", () => {
-  function Flag() { return <p data-testid="f">{String(useUiV2())}</p>; }
-  const show = () => render(wrap(<Flag />));
-
-  it("uses the database flag by default", () => { show(); expect(screen.getByTestId("f").textContent).toBe("true"); });
-
-  it("a stored ?ui=v1 override beats the database flag, and ?ui=reset clears it", () => {
-    window.history.pushState({}, "", "/?ui=v1");
-    applyUiOverride();
-    show();
-    expect(screen.getByTestId("f").textContent).toBe("false");
-    cleanup();
-    window.history.pushState({}, "", "/?ui=reset");
-    applyUiOverride();
-    show();
-    expect(screen.getByTestId("f").textContent).toBe("true");
-    window.history.pushState({}, "", "/");
-  });
-});

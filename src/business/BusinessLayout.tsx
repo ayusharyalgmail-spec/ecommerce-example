@@ -5,7 +5,7 @@ import { Link, Outlet, useParams } from "react-router-dom";
 import { useT, pick } from "@/lib/i18n";
 import { useTenantBySlug, tenantAssetUrl } from "@/platform/queries";
 import { recordPageView } from "@/platform/api";
-import { TenantProvider } from "@/platform/TenantContext";
+import { BusinessProvider } from "@/platform/TenantContext";
 import { useTheme } from "@/theme/ThemeProvider";
 import { Skeleton } from "@/ui";
 import { Globe, MapPin, Phone } from "@/ui/icons";
@@ -62,7 +62,7 @@ export default function BusinessLayout() {
   }
 
   return (
-    <TenantProvider value={tenant}>
+    <BusinessProvider value={tenant}>
       <div className="flex min-h-screen flex-col bg-[var(--bg)]">
         {/* Skip link */}
         <a href="#main-content" className="skip-link">Skip to content</a>
@@ -125,6 +125,6 @@ export default function BusinessLayout() {
           </div>
         </footer>
       </div>
-    </TenantProvider>
+    </BusinessProvider>
   );
 }

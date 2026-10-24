@@ -5,6 +5,7 @@ import { useUnread } from "@/messaging/hooks";
 import { House, LayoutDashboard, MessageCircle, Package, ShoppingBag, ShoppingCart, User, cn, type LucideIcon } from "@/ui";
 import { usePendingOrders } from "@/admin/usePending";
 import { useAuth } from "@/lib/auth";
+import { useFeature } from "@/platform/TenantContext";
 import { useCart } from "@/lib/cart";
 import { useT } from "@/lib/i18n";
 import { signInHref } from "./Header";
@@ -39,13 +40,14 @@ export function BottomNav() {
   const { pathname, search } = useLocation();
   const keyboard = useKeyboardOpen();
   const unread = useUnread().total;
+  const messagingOn = useFeature("messaging");
   if (pathname.startsWith("/checkout") || keyboard) return null;
 
   const items: Item[] = [
     { to: "/", label: t("nav.home"), icon: House, end: true },
     { to: "/shop", label: t("nav.shop"), icon: ShoppingBag },
     isStaff ? { to: "/admin", label: t("nav.admin"), icon: LayoutDashboard, badge: pending } : { to: "/cart", label: t("nav.cart"), icon: ShoppingCart, badge: count },
-    isStaff ? { to: "/admin/orders", label: t("admin.orders"), icon: Package } : { to: "/messages", label: t("nav.messages"), icon: MessageCircle, badge: unread, compact: true },
+    isStaff ? { to: "/admin/orders", label: t("admin.orders"), icon: Package } : messagingOn ? { to: "/messages", label: t("nav.messages"), icon: MessageCircle, badge: unread, compact: true } : { to: "/track", label: t("nav.track"), icon: Package },
     { to: user ? "/account" : signInHref(pathname + search), label: user ? t("nav.account") : t("nav.signin"), icon: User },
   ];
 

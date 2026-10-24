@@ -1,0 +1,54 @@
+// Decides which tenant a page load belongs to. Pure (no React, no network) so it is unit-tested.
+import { FLAGSHIP_SLUG } from "./features";
+
+export type TenantRef =
+  | { kind: "hub" }
+  | { kind: "slug"; slug: string; via: "path" | "query" | "subdomain" | "session" }
+  | { kind: "domain"; domain: string };
+
+export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
+export const SESSION_KEY = "tenant";
+
+type Loc = { hostname: string; pathname: string; search: string };
+type Store = Pick<Storage, "getItem" | "setItem" | "removeItem"> | null;
+
+const isLocalHost = (h: string) => h === "localhost" || h === "127.0.0.1" || h === "[::1]" || h.endsWith(".localhost") || /^\d+\.\d+\.\d+\.\d+$/.test(h);
+
+/** Path prefix to give the router when the tenant came from /s/:slug (so every in-app link stays inside it). */
+export function basenameFor(ref: TenantRef): string {
+  return ref.kind === "slug" && ref.via === "path" ? `/s/${ref.slug}` : "/";
+}
+
+/**
+ * Order: /s/:slug  >  ?tenant=slug (remembered for the tab)  >  subdomain / custom domain  >  remembered tenant (dev hosts only).
+ * `ecommerce.<root>` is the flagship store; `www`, the bare root and localhost are the hub; any other subdomain is a vendor
+ * store; an unrelated hostname is looked up as a custom_domain (the caller falls back to the flagship if nothing matches).
+ */
+export function resolveTenantRef(loc: Loc, rootDomain: string | undefined, session: Store): TenantRef {
+  const read = () => { try { return session?.getItem(SESSION_KEY) ?? null; } catch { return null; } };
+  const write = (v: string | null) => { try { if (v === null) session?.removeItem(SESSION_KEY); else session?.setItem(SESSION_KEY, v); } catch { /* storage blocked */ } };
+
+  const m = loc.pathname.match(/^\/s\/([^/]+)(?:\/|$)/);
+  if (m && SLUG_RE.test(m[1])) return { kind: "slug", slug: m[1], via: "path" };
+
+  const q = new URLSearchParams(loc.search).get("tenant");
+  if (q === "hub" || q === "reset") { write(null); if (q === "hub") return { kind: "hub" }; }
+  else if (q && SLUG_RE.test(q.toLowerCase())) { write(q.toLowerCase()); return { kind: "slug", slug: q.toLowerCase(), via: "query" }; }
+
+  const host = loc.hostname.toLowerCase();
+  const root = rootDomain?.toLowerCase().replace(/^\./, "");
+  const dev = isLocalHost(host);
+  if (!dev && root && (host === root || host.endsWith("." + root))) {
+    const sub = host === root ? "" : host.slice(0, -(root.length + 1));
+    if (sub === "" || sub === "www") return { kind: "hub" };
+    if (SLUG_RE.test(sub) || sub === "ecommerce") return { kind: "slug", slug: sub, via: "subdomain" };
+    return { kind: "hub" };
+  }
+  if (!dev) return { kind: "domain", domain: host };
+
+  const saved = read();
+  if (saved && SLUG_RE.test(saved)) return { kind: "slug", slug: saved, via: "session" };
+  return { kind: "hub" };
+}
+
+export const isFlagship = (ref: TenantRef) => ref.kind === "slug" && ref.slug === FLAGSHIP_SLUG;

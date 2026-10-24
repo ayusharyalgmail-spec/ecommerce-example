@@ -635,3 +635,17 @@ Status of every entry below: **Proposed** (drafted in Phase 0, 20 Oct 2026, awai
 **Result:** shop initial JS 201.4 to 188.9 kB gzip; `npm run check` also typechecks, tests and builds the platform app.
 
 **Open:** the shop database still holds the old `tenants` tables (2 seed rows) from an applied migration. Dropping them is destructive and needs owner approval after the control-plane project exists. The platform app has no live Supabase project yet, so it has not been run against data.
+
+---
+
+## UX-D023: One app and one database for hub, flagship and vendor stores
+
+**Status:** Accepted by the owner (24 Oct 2026). **Supersedes UX-D022** (separate control-plane app and database).
+
+**Context:** Running a second app and Supabase project for the directory doubled deploys and made the hub, the flagship and vendors impossible to preview together. The owner chose a single unified runtime.
+
+**Decision:** The directory code returned to `src/`; `platform-app/` was removed. Tenancy is data: `tenants.features`, `tenant_members`, `tenant_id` on every store table, and a request-scoped tenant (`x-tenant-id` header, or `p_tenant_id` on checkout RPCs). The hardening from the control-plane baseline (no client INSERT/DELETE on `tenants`, content-column UPDATE only, tenant-scoped storage, SECURITY DEFINER helpers) was merged into `20261024140000`, which also drops the weak policies the applied `multi_tenant_platform` migration created. That applied migration was left untouched.
+
+**Result:** see ARCHITECTURE.md section 22, SECURITY.md section 17, DATABASE.md section 14.
+
+**Open:** migrations `20261024140000` and `20261024150000` are not applied anywhere; messaging and ledger multi-tenancy needs a review before a second real vendor uses them (SECURITY.md section 17, known gaps).

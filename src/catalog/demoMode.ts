@@ -12,9 +12,14 @@ export const DEMO_ALLOWED: boolean = import.meta.env.DEV || import.meta.env.VITE
 
 const KEY = "demo-catalog";
 
+/** Set by the tenant resolver when the flagship store could not be read from the database (offline or not seeded yet).
+ *  It only makes the fixture the default where DEMO_ALLOWED already permits it (dev server / demo build), never in production. */
+let flagshipFallback = false;
+export const setFlagshipFallback = (on: boolean) => { flagshipFallback = on; };
+
 export function demoOn(): boolean {
   if (!DEMO_ALLOWED) return false;
-  const byDefault = import.meta.env.VITE_DEMO_CATALOG === "1";
+  const byDefault = import.meta.env.VITE_DEMO_CATALOG === "1" || flagshipFallback;
   try {
     const p = new URLSearchParams(window.location.search).get("demo");
     if (p === "1") localStorage.setItem(KEY, "1");

@@ -375,3 +375,38 @@ Vendor can request a GDPR-style data export or deletion. Operator coordinates wi
 3. **Security incident response team:** defined as operator + core developers. Escalation to external security firm if breach is suspected.
 4. **Compliance (GDPR, local):** operator is responsible for compliance based on vendor location and vendor's own obligations. Vendor handbook documents data handling. Confirm with legal counsel before commercial use.
 5. **Cyber insurance:** optional, to be evaluated based on business model and risk.
+
+
+---
+
+## 17. Multi-tenant isolation (migration `20261024150000_tenant_isolation`, NOT yet applied)
+
+One Supabase project now serves the flagship store (`ecommerce`), vendor stores and the hub directory. Isolation is enforced in Postgres, never by hiding UI.
+
+**Who may act for which store**
+
+| Table / function | Meaning |
+|---|---|
+| `tenants` (+ `features jsonb`, `status`) | A store. Public read only while `status = 'active'`. Clients cannot insert or delete; owners edit content columns only (not `status`, `slug`, `custom_domain`, `owner_id`, `features`). |
+| `tenant_members (tenant_id, user_id, role)` | Membership. Mirrored from `staff_members` by trigger; readable by the member, the tenant owner/manager and platform admins; **no client writes**. |
+| `platform_admins` | No client access at all (grants revoked). Reached only through `is_platform_admin()` and the `platform_*` RPCs. |
+| `public.is_platform_admin()`, `public.is_tenant_member(p_tenant_id, p_roles)` | `SECURITY DEFINER`, `SET search_path = public`, EXECUTE for `anon`/`authenticated` (they only answer about the caller). |
+| `app_private.has_permission(p, tenant)` | Per-tenant staff permission. The one-argument form means "in the current tenant", so every existing policy and RPC became tenant-aware. |
+
+**Which store is a request for?** `app_private.current_tenant_id()`: the transaction-local `app.tenant_id` pinned by `quote_checkout`/`place_order`, else the `x-tenant-id` header set by the browser client, else the flagship. An unknown or malformed id yields `NULL`, so every scoped table returns **no rows** (fail closed). The header only *selects* a tenant; permission is still checked against membership of that tenant, so a forged header grants nothing (tested).
+
+**Every store table** has `tenant_id uuid NOT NULL` (FK to `tenants`, indexed, default `current_tenant_id()`) and a **RESTRICTIVE** policy `tenant_scope` that is ANDed with the existing policies: rows must belong to the current tenant, and the public sees only active tenants (members and platform admins also see their own draft or suspended ones). `profiles` (global identity) and `rate_limit_hits` (infrastructure) are intentionally not tenant-scoped. Uniqueness that was global is now per tenant (`categories.slug`, `coupons.code`, `products.slug/sku`, `orders.order_number`, ledger phone); `store_settings` is one row per tenant (PK `tenant_id`).
+
+**Checkout.** `quote_checkout(p_tenant_id, ...)` and `place_order(p_tenant_id, ...)` reject an unknown or inactive tenant (`NOT_FOUND`), pin the tenant, then run the unchanged pricing code, which now only sees that tenant's products, zones, coupons and settings. A product, zone or coupon of another tenant is `NOT_FOUND` / `COUPON_UNAVAILABLE`; coupons require the `coupons` feature; `MIN_QUANTITY` applies only with the `min_order_qty` feature. Prices and totals stay server-side; idempotency keys and replay are untouched. The old signatures remain as internal cores with EXECUTE revoked from clients.
+
+**Storage** (`product-images`, `store-assets`, `payment-proofs`): new objects must be under `<tenant_id>/...` and the uploader needs the matching permission **in that tenant**; payment proofs are accepted only for active tenants. Pre-existing un-prefixed objects stay readable and are deletable only by the flagship's staff. `tenant-assets` keeps its hardened `tenants/<tenant_id>/...` contract from the control-plane baseline.
+
+**Admin guard.** `RequireStaff` (route) plus the per-tenant `staff_members` read in `AuthProvider`: a signed-in user who is not staff *of this store* sees "Unauthorized for this store". The database remains the authority.
+
+**Tests.** `node supabase/tests/tenancy.mjs` (70 checks, all migrations applied in order, idempotent re-run) and `node supabase/tests/rls.mjs` (79 checks, tenant tables). Both need `npm i --no-save @electric-sql/pglite` and cover SQL, RLS and grants only, not PostgREST, Auth or Storage.
+
+**Known gaps (close before onboarding a second REAL vendor)**
+1. Messaging (`msg_*`) and ledger RPCs are tenant-scoped through RLS and `has_permission`, but some unique keys (`msg_preferences`, `msg_conversations`) are still per user. Keep `messaging` and `ledger` off for vendors until reviewed.
+2. The `x-tenant-id` header must be allowed by the project's CORS config; verify on the live project.
+3. Staff RPCs resolve the tenant from the header, not from the row they touch; the guard is the restrictive policy plus `has_permission` on the current tenant. A per-RPC row/tenant assertion would be defence in depth.
+4. `staff_members` is still one row per user (one store per staff account).
