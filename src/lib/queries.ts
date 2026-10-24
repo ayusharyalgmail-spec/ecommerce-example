@@ -1,7 +1,7 @@
 // Shared, de-duplicated queries (TanStack Query). Cache policy per docs/ux-overhaul/ARCHITECTURE.md 7.1.
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
-import { demoOn } from "@/catalog/demoMode";
+import { DEMO_ALLOWED, demoOn } from "@/catalog/demoMode";
 
 export const TEN_MIN = 10 * 60_000;
 
@@ -13,7 +13,7 @@ export function useCategories() {
     queryKey: ["categories"],
     staleTime: TEN_MIN,
     queryFn: async (): Promise<Category[]> => {
-      if (demoOn()) return (await import("@/catalog/demo")).categories;
+      if (DEMO_ALLOWED && demoOn()) return (await import("@/catalog/demo")).categories;
       const { data, error } = await supabase.from("categories").select("id,slug,name_en,name_ne").eq("is_active", true).order("sort_order");
       if (error) throw new Error(error.message);
       return data ?? [];

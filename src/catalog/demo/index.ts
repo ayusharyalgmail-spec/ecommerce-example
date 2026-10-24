@@ -89,7 +89,7 @@ export const byIds = (ids: string[]) => ids.map((i) => byId.get(i)).filter((p): 
 
 export function cartLines(ids: string[]): CartLine[] {
   return byIds(ids).map((p) => ({ id: p.id, slug: p.slug, category_id: p.category_id, name_en: p.name_en, name_ne: p.name_ne, price_paisa: p.price_paisa,
-    discount_price_paisa: p.discount_price_paisa, available: p.stock_quantity - p.reserved_quantity, image: p.product_images?.[0]?.storage_path ?? null }));
+    discount_price_paisa: p.discount_price_paisa, available: p.stock_quantity - p.reserved_quantity, image: p.product_images?.[0]?.storage_path ?? null, min_qty: 1 }));
 }
 
 /** Same shape as the product page query; demo products have no photos and no reviews. */

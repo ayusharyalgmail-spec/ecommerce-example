@@ -145,6 +145,7 @@
   "common.language": "English",
   "common.contact": "WhatsApp मा सम्पर्क गर्नुहोस्",
   "err.INSUFFICIENT_STOCK": "कुनै सामानको स्टक सकियो।",
+  "err.MIN_QUANTITY": "कुनै सामान न्यूनतम अर्डर मात्राभन्दा कम छ। कार्ट मिलाएर फेरि प्रयास गर्नुहोस्।",
   "err.COUPON_UNAVAILABLE": "कुपन अमान्य वा म्याद सकिएको छ।",
   "err.IDEMPOTENCY_CONFLICT": "यो चेकआउटबाट अर्डर पहिले नै भइसकेको छ। अर्डर ट्र्याक गर्नुहोस्, वा नयाँ अर्डरका लागि पृष्ठ रिलोड गर्नुहोस्।",
   "err.VALIDATION_FAILED": "कृपया फारम जाँच गर्नुहोस्।",

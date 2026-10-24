@@ -1,0 +1,3 @@
+@import "../../src/index.css";
+/* Tailwind only scans files under this app by default; the shared primitives live in ../src. */
+@source "../../src";

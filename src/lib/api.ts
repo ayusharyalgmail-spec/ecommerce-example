@@ -1,9 +1,10 @@
 import { randomUUID } from "@/lib/uuid";
-import { demoOn } from "@/catalog/demoMode";
+import { DEMO_ALLOWED, demoOn } from "@/catalog/demoMode";
 // All data access goes straight from the browser to Supabase. Authorisation is enforced by
 // Postgres (RLS policies + SECURITY DEFINER functions that re-check permissions), never by this file.
 import { supabase, errorCode } from "./supabase";
 import { normalizePhone, rupeesToPaisa } from "./money";
+import { minQty } from "./minQty";
 import { ImageError, prepareImage, type ImageErrorCode } from "./image";
 
 /* ----- storefront ----- */
@@ -11,18 +12,21 @@ import { ImageError, prepareImage, type ImageErrorCode } from "./image";
 export type CartLine = {
   id: string; slug: string; category_id?: string | null; name_en: string; name_ne: string | null;
   price_paisa: number; discount_price_paisa: number | null; available: number; image: string | null;
+  /** products.min_purchase_qty (1 = no minimum). */
+  min_qty: number;
 };
 
 export async function loadCartProducts(ids: string[]): Promise<CartLine[]> {
   if (!ids.length) return [];
-  if (demoOn()) return (await import("@/catalog/demo")).cartLines(ids);
+  if (DEMO_ALLOWED && demoOn()) return (await import("@/catalog/demo")).cartLines(ids);
   const { data } = await supabase.from("products")
-    .select("id,slug,category_id,name_en,name_ne,price_paisa,discount_price_paisa,stock_quantity,reserved_quantity,product_images(storage_path,is_primary,sort_order)")
+    .select("id,slug,category_id,name_en,name_ne,price_paisa,discount_price_paisa,stock_quantity,reserved_quantity,min_purchase_qty,product_images(storage_path,is_primary,sort_order)")
     .in("id", ids).eq("status", "published");
   return (data ?? []).map((p) => {
     const imgs = [...(p.product_images ?? [])].sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);
     return { id: p.id, slug: p.slug, category_id: p.category_id, name_en: p.name_en, name_ne: p.name_ne, price_paisa: p.price_paisa,
-      discount_price_paisa: p.discount_price_paisa, available: p.stock_quantity - p.reserved_quantity, image: imgs[0]?.storage_path ?? null };
+      discount_price_paisa: p.discount_price_paisa, available: p.stock_quantity - p.reserved_quantity, image: imgs[0]?.storage_path ?? null,
+      min_qty: minQty(p.min_purchase_qty) };
   });
 }
 

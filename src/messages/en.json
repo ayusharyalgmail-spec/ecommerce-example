@@ -145,6 +145,7 @@
   "common.language": "नेपाली",
   "common.contact": "Contact vendor on WhatsApp",
   "err.INSUFFICIENT_STOCK": "An item is out of stock.",
+  "err.MIN_QUANTITY": "An item is below its minimum order quantity. Update your cart and try again.",
   "err.COUPON_UNAVAILABLE": "Coupon is invalid or expired.",
   "err.IDEMPOTENCY_CONFLICT": "An order from this checkout was already placed. Check Track order, or reload the page to start a new order.",
   "err.VALIDATION_FAILED": "Please check the form fields.",

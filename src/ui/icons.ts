@@ -9,6 +9,7 @@ export {
   ExternalLink, Keyboard, Palette, Mail, SlidersHorizontal, ShieldCheck, Tag, RotateCcw, Sparkles, TrendingUp, TrendingDown, Wallet, Banknote, HandCoins, Clock,
   Wheat, Cookie, CupSoda, SprayCan, Droplets, PenLine, BookOpen, Cable, CookingPot, Lamp, Leaf, ShoppingBasket, Milk, Carrot, Smartphone, Sofa, Shirt, Gift, ArrowUpDown, Megaphone,
   Footprints,
+  ArrowRight, Zap, HeartHandshake, Save, Copy, Building2, Camera, MessageSquare, Image as ImageIcon,
   Send, CheckCheck, ImagePlus, Eye, WifiOff, Pencil, Archive, RefreshCw, UserRound,
 } from "lucide-react";
 export type { LucideIcon, LucideProps } from "lucide-react";
