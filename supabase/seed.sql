@@ -49,13 +49,17 @@ on conflict (slug) do update set
 -- ============================================================
 -- 4. Vendor Store: myshop (All features, dedicated admin in tenant_members)
 -- ============================================================
-insert into public.tenants (slug, business_name, tagline, business_type, status, brand_primary, email, features)
-values ('myshop', 'My Shop', 'Your one-stop community store.', 'Retail', 'active', '#2563EB', 'admin@myshop.amanaryal.com',
-  '{"coupons":true,"campaigns":true,"ledger":true,"messaging":true,"min_order_qty":true,"reviews":true,"pos_export":true}')
+insert into public.tenants (slug, business_name, tagline, business_type, status, brand_primary, email, features, brand_config, cover_path)
+values ('myshop', 'My Shop', 'Your premier mega-store for groceries, tech, fashion & essentials.', 'Mega Store & Supermarket', 'active', '#2563EB', 'admin@myshop.amanaryal.com',
+  '{"coupons":true,"campaigns":true,"ledger":true,"messaging":true,"min_order_qty":true,"reviews":true,"pos_export":true}',
+  '{"hero_image":"https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=2000"}'::jsonb,
+  'https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=2000')
 on conflict (slug) do update set
   status = 'active',
   email = 'admin@myshop.amanaryal.com',
-  features = '{"coupons":true,"campaigns":true,"ledger":true,"messaging":true,"min_order_qty":true,"reviews":true,"pos_export":true}';
+  features = '{"coupons":true,"campaigns":true,"ledger":true,"messaging":true,"min_order_qty":true,"reviews":true,"pos_export":true}',
+  brand_config = '{"hero_image":"https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=2000"}'::jsonb,
+  cover_path = 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=2000';
 
 -- ============================================================
 -- 5. Vendor Store: family-mart (Grocery subset, dedicated admin in tenant_members)
@@ -103,12 +107,38 @@ begin
   insert into public.delivery_zones (tenant_id, name_en, name_ne, fee_paisa)
     select v_myshop_id, 'Kathmandu Valley', 'काठमाडौं उपत्यका', 10000
     where not exists (select 1 from public.delivery_zones z where z.tenant_id = v_myshop_id);
-  insert into public.categories (tenant_id, slug, name_en, name_ne)
-    values (v_myshop_id, 'general', 'General', 'सामान्य')
-    on conflict do nothing;
-  insert into public.products (tenant_id, slug, sku, name_en, name_ne, price_paisa, stock_quantity, status, min_purchase_qty, category_id, published_at)
-    select v_myshop_id, 'wireless-mouse', 'MS-MOUSE-1', 'Wireless Mouse', 'वायरलेस माउस', 150000, 25, 'published', 1, c.id, now()
-      from public.categories c where c.tenant_id = v_myshop_id and c.slug = 'general' on conflict do nothing;
+  -- 8 Categories for myshop
+  insert into public.categories (tenant_id, slug, name_en, name_ne, sort_order, is_active)
+  values
+    (v_myshop_id, 'groceries-fresh-produce', 'Groceries & Fresh Produce', 'किराना तथा ताजा तरकारी', 1, true),
+    (v_myshop_id, 'tech-gadgets', 'Tech & Gadgets', 'प्रविधि तथा ग्याजेट्स', 2, true),
+    (v_myshop_id, 'home-electronics', 'Home Electronics', 'घरायसी इलेक्ट्रोनिक्स', 3, true),
+    (v_myshop_id, 'mobile-phones-accessories', 'Mobile Phones & Accessories', 'मोबाइल तथा सामग्रीहरू', 4, true),
+    (v_myshop_id, 'pharmacy-health', 'Pharmacy & Health', 'औषधि तथा स्वास्थ्य', 5, true),
+    (v_myshop_id, 'premium-footwear', 'Premium Footwear', 'उत्कृष्ट जुत्ता तथा स्नीकर्स', 6, true),
+    (v_myshop_id, 'apparel-fashion', 'Apparel & Fashion', 'पोशाक तथा फेसन', 7, true),
+    (v_myshop_id, 'designer-eyewear', 'Designer Eyewear', 'डिजाइनर चश्मा तथा सनग्लासेस', 8, true)
+  on conflict (tenant_id, slug) do update set
+    name_en = excluded.name_en,
+    name_ne = excluded.name_ne,
+    sort_order = excluded.sort_order,
+    is_active = true;
+
+  -- Featured starter products for myshop
+  insert into public.products (tenant_id, slug, sku, name_en, name_ne, description_en, price_paisa, discount_price_paisa, stock_quantity, status, min_purchase_qty, category_id, published_at)
+  select v_myshop_id, 'apple-macbook-pro-14-m3', 'TECH-MBP-001', 'Apple MacBook Pro 14" M3 Pro', 'एप्पल म्याकबुक प्रो १४ इन्च', 'Supercharged by the M3 Pro chip with Liquid Retina XDR display.', 29500000, 28490000, 12, 'published', 1, c.id, now()
+  from public.categories c where c.tenant_id = v_myshop_id and c.slug = 'tech-gadgets'
+  on conflict (tenant_id, slug) do nothing;
+
+  insert into public.products (tenant_id, slug, sku, name_en, name_ne, description_en, price_paisa, discount_price_paisa, stock_quantity, status, min_purchase_qty, category_id, published_at)
+  select v_myshop_id, 'organic-hass-avocados-pack', 'GROC-AVO-001', 'Organic Hass Avocados (Pack of 4)', 'अर्गानिक हास एभोकाडो (४ वटा)', 'Hand-picked ripe Hass avocados rich in healthy fats.', 65000, 59000, 45, 'published', 1, c.id, now()
+  from public.categories c where c.tenant_id = v_myshop_id and c.slug = 'groceries-fresh-produce'
+  on conflict (tenant_id, slug) do nothing;
+
+  insert into public.products (tenant_id, slug, sku, name_en, name_ne, description_en, price_paisa, discount_price_paisa, stock_quantity, status, min_purchase_qty, category_id, published_at)
+  select v_myshop_id, 'nike-air-force-1-07', 'FOOT-AF1-001', 'Nike Air Force 1 ''07 Triple White', 'नाइकी एयर फोर्स १ ०७ स्नीकर्स', 'Crisp white leather overlays stitched atop encapsulated full-length Nike Air cushioning.', 1450000, null, 40, 'published', 1, c.id, now()
+  from public.categories c where c.tenant_id = v_myshop_id and c.slug = 'premium-footwear'
+  on conflict (tenant_id, slug) do nothing;
 
   -- --- Dedicated Admin for family-mart ---
   insert into public.tenant_members (tenant_id, user_id, role)

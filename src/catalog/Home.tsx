@@ -12,6 +12,7 @@ import { ProductCard } from "./ProductCard";
 import { SearchBox } from "./SearchBox";
 import { categoryIcon } from "./categoryIcon";
 import { PAGE_X } from "./layout";
+import { useTenant } from "@/platform/TenantContext";
 
 // Soft tints rotate across category tiles that have no photo, so the grid stays lively without random colours.
 const TINTS = ["bg-mint-soft", "bg-peach-soft", "bg-sky-soft", "bg-butter-soft", "bg-rose-soft"];
@@ -44,6 +45,7 @@ function FeaturedChip({ p, locale }: { p: CardProduct; locale: Locale }) {
 
 function Hero() {
   const { t, locale } = useT();
+  const { tenant } = useTenant();
   const art = useDemoArt();
   const deals = useRail("deals"), fresh = useRail("new");
   const service = useServiceInfo().data;
@@ -51,6 +53,13 @@ function Hero() {
   const featured = pool[0];
   const collage = pool.filter((p, i, a) => a.findIndex((x) => x.id === p.id) === i).slice(0, 3);
   const zone = service?.zones[0];
+
+  const heroPhotoUrl =
+    (tenant?.brand_config as Record<string, any>)?.hero_image ||
+    (tenant?.brand_config as Record<string, any>)?.hero_image_url ||
+    tenant?.cover_path ||
+    art?.hero?.src ||
+    "https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=2000";
 
   return (
     <section aria-labelledby="h-hero" className="grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:gap-10 lg:gap-14">
@@ -65,9 +74,15 @@ function Hero() {
       </div>
 
       <div className="relative">
-        {art?.hero ? (
-          <img src={art.hero.src} alt={t("home.hero.photo_alt")} width={art.hero.w} height={art.hero.h} fetchPriority="high"
-            className="aspect-[4/3] w-full rounded-xl bg-well object-cover shadow-[var(--e2)] md:aspect-[5/4]" />
+        {heroPhotoUrl ? (
+          <img
+            src={heroPhotoUrl}
+            alt={t("home.hero.photo_alt") || "Supermarket storefront interior"}
+            width={1200}
+            height={900}
+            fetchPriority="high"
+            className="aspect-[4/3] w-full rounded-xl bg-well object-cover shadow-[var(--e2)] md:aspect-[5/4]"
+          />
         ) : collage.length >= 2 ? (
           <div aria-hidden className="grid aspect-[4/3] grid-cols-[1.4fr_1fr] grid-rows-2 gap-3 md:aspect-[5/4]">
             {collage.map((p, i) => (
@@ -75,7 +90,14 @@ function Hero() {
             ))}
           </div>
         ) : (
-          <div aria-hidden className="flex aspect-[4/3] items-center justify-center rounded-xl bg-mint-soft md:aspect-[5/4]"><PackageOpen size={72} strokeWidth={1.1} className="text-muted" /></div>
+          <img
+            src="https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=2000"
+            alt="Supermarket storefront interior"
+            width={1200}
+            height={900}
+            fetchPriority="high"
+            className="aspect-[4/3] w-full rounded-xl bg-well object-cover shadow-[var(--e2)] md:aspect-[5/4]"
+          />
         )}
         {featured && <div className="absolute -bottom-5 left-3 sm:left-6 md:-left-8"><FeaturedChip p={featured} locale={locale} /></div>}
         {zone && (

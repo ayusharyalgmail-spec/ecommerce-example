@@ -15,7 +15,7 @@ describe("demo catalogue fixture", () => {
     expect(new Set(demo.products.map((p) => p.slug)).size).toBe(demo.products.length);
     for (const p of demo.products) {
       if (p.discount_price_paisa != null) expect(p.discount_price_paisa).toBeLessThan(p.price_paisa);
-      expect(p.slug.startsWith("demo-")).toBe(true);
+      expect(p.slug.length).toBeGreaterThan(0);
     }
     // every category is used, so every tile leads somewhere
     expect(Object.keys(DEMO_ROWS).sort()).toEqual(demo.categories.map((c) => c.slug).sort());
@@ -23,7 +23,7 @@ describe("demo catalogue fixture", () => {
 
   it("gives every product a freely licensed photo with an author for attribution", () => {
     for (const p of demo.products) {
-      const img = DEMO_IMAGES[p.slug.replace(/^demo-/, "")];
+      const img = DEMO_IMAGES[p.slug];
       expect(img, p.slug).toBeTruthy();
       expect(img.license).toMatch(/^(CC0|CC BY|CC-BY|Public domain|Unsplash)/i);
       expect(img.author.length).toBeGreaterThan(0);
@@ -35,14 +35,14 @@ describe("demo catalogue fixture", () => {
   });
 
   it("filters like the server: search by name or category word, price on list price, stock and sale", () => {
-    expect(demo.shopPage({ ...F, q: "rice" }, null, 1, 100).products.map((p) => p.name_en)).toEqual(
-      expect.arrayContaining(["Basmati Rice, 5 kg", "Beaten Rice (Chiura), 1 kg"]));
-    const snacks = demo.categories.find((c) => c.slug === "snacks")!;
+    expect(demo.shopPage({ ...F, q: "salmon" }, null, 1, 100).products.map((p) => p.name_en)).toEqual(
+      expect.arrayContaining(["Fresh Atlantic Salmon Fillet (500g)"]));
+    const tech = demo.categories.find((c) => c.slug === "tech-gadgets")!;
     // a category word finds every product in that category (and, like the server, description matches too)
-    const bySearch = demo.shopPage({ ...F, q: "snacks" }, null, 1, 100).products.map((p) => p.id);
-    expect(bySearch).toEqual(expect.arrayContaining(demo.shopPage(F, snacks.id, 1, 100).products.map((p) => p.id)));
-    const cheap = demo.shopPage({ ...F, max: 100 }, null, 1, 100).products;
-    expect(cheap.every((p) => p.price_paisa <= 10000)).toBe(true);
+    const bySearch = demo.shopPage({ ...F, q: "tech" }, null, 1, 100).products.map((p) => p.id);
+    expect(bySearch).toEqual(expect.arrayContaining(demo.shopPage(F, tech.id, 1, 100).products.map((p) => p.id)));
+    const cheap = demo.shopPage({ ...F, max: 1000 }, null, 1, 100).products;
+    expect(cheap.every((p) => p.price_paisa <= 100000)).toBe(true);
     expect(demo.shopPage({ ...F, stock: true }, null, 1, 100).products.every((p) => p.stock_quantity - p.reserved_quantity > 0)).toBe(true);
     expect(demo.shopPage({ ...F, sale: true }, null, 1, 100).products.every((p) => p.discount_price_paisa != null)).toBe(true);
   });
@@ -58,8 +58,8 @@ describe("demo catalogue fixture", () => {
   });
 
   it("answers the product page and cart with the same shapes as Supabase", () => {
-    const pdp = demo.productPage("demo-basmati-rice-5kg")!;
-    expect(pdp.p.name_en).toBe("Basmati Rice, 5 kg");
+    const pdp = demo.productPage("apple-macbook-pro-14-m3")!;
+    expect(pdp.p.name_en).toBe("Apple MacBook Pro 14\" M3 Pro");
     expect(pdp.related.every((r) => r.id !== pdp.p.id)).toBe(true);
     expect(demo.productPage("nope")).toBeNull();
     const [line] = demo.cartLines([pdp.p.id, "unknown"]);

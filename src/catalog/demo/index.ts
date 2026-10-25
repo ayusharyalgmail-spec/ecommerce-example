@@ -8,19 +8,14 @@ import { DEMO_IMAGES, type DemoImage } from "./images";
 
 // Each category tile borrows one representative product photo.
 const CATEGORY_PHOTO: Record<string, string> = {
-  "general-store": "basmati-rice-5kg",
-  shoes: "air-running-shoes",
-  clothes: "classic-cotton-tshirt",
-  electronics: "wireless-anc-headphones",
-  groceries: "potatoes-1kg",
-  snacks: "potato-chips-family",
-  beverages: "orange-juice-1l",
-  household: "toilet-tissue-pack",
-  "personal-care": "toothbrush",
-  stationery: "pencil-pack",
-  books: "sample-novel",
-  kitchen: "pressure-cooker-3l",
-  "home-lifestyle": "led-bulb-9w",
+  "groceries-fresh-produce": "organic-hass-avocados-pack",
+  "tech-gadgets": "apple-macbook-pro-14-m3",
+  "home-electronics": "sony-65-bravia-xr-oled-tv",
+  "mobile-phones-accessories": "samsung-galaxy-s24-ultra",
+  "pharmacy-health": "optimum-nutrition-gold-standard-whey",
+  "premium-footwear": "nike-air-force-1-07",
+  "apparel-fashion": "levis-501-original-fit-jeans",
+  "designer-eyewear": "ray-ban-aviator-classic",
 };
 export const heroPhoto: DemoImage | null = DEMO_IMAGES.hero ?? null;
 export const promoPhoto: DemoImage | null = DEMO_IMAGES.promo ?? null;
@@ -40,7 +35,7 @@ const catId = new Map(categories.map((c) => [c.slug, c.id]));
 let n = 0;
 export const products: DemoProduct[] = Object.entries(DEMO_ROWS).flatMap(([cat, rows]) =>
   rows.map(([slug, name, price, sale, stock, sold, age, desc]) => ({
-    id: uuid(++n), slug: `demo-${slug}`, name_en: name, name_ne: null,
+    id: uuid(++n), slug: slug, name_en: name, name_ne: null,
     price_paisa: price * 100, discount_price_paisa: sale != null && sale < price ? sale * 100 : null,
     discount_label_en: null, discount_label_ne: null,
     stock_quantity: stock, reserved_quantity: 0, low_stock_threshold: 8,
