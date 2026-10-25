@@ -430,3 +430,23 @@ flowchart TD
 - **Platform admin** `src/platform/PlatformAdmin.tsx`: hub only, calls `is_platform_admin()` then the `platform_*` RPCs.
 - **Storage**: new objects are written under `<tenant_id>/` (`tenantPath`), enforced by storage RLS.
 - **Canonical UI**: the V2 screens are the only storefront and admin; the old V1 pages and the `ui_v2` flag were removed.
+
+---
+
+## 23. Engineering Guardrails & Network Operating Model (Consolidated)
+
+### Engineering Discipline & Guardrails
+- **Preserve Working Functionality**: Smallest, highest-fidelity modification required to solve the task. No opportunistic refactors or boilerplate rewrites.
+- **Understand Before Modifying**: Trace end-to-end data flows (UI → client API → Supabase RPC/storage → SQL policy/function) before changing code.
+- **Zero Secret Leakage**: Never expose `.env.local`, Supabase service-role keys, or JWT tokens in client code, logs, or chat outputs.
+- **Contract Integrity**: Maintain TypeScript definitions in `src/types/`, verify Supabase RPC signatures and RLS policies in `supabase/migrations/`.
+- **UI & Accessibility Standards**: Support **Lite** effects mode for constrained devices and honor `prefers-reduced-motion`. Mobile-first responsiveness down to 320px screen width without horizontal overflow. Comfortable touch targets and visible focus rings. Retain English and Nepali internationalization.
+- **Quality Verification Gate**: Changes must pass `npm run typecheck`, `npm run lint`, `npm test`, and `npm run check`.
+
+### Local Business Network Operating Model
+- **Core Value Proposition**: Digital presence and local commerce infrastructure for local shops (groceries, fashion, electronics, hardware, clinics, services).
+- **Domain & Subdomain Hierarchy**:
+  - Hub/Network portal: `dumarwana.com` (discovery, featured vendors, categories, join platform)
+  - Tenant Subdomains: `shop.dumarwana.com` / `hotel.dumarwana.com` (resolved via `resolveTenantRef`)
+  - Custom Domains: `myshop.com` mapped directly to tenant ID.
+- **Customer-First Rollout**: Validate with real paying merchants before expanding geographically; reuse the core multi-tenant runtime across regional networks without code duplication.

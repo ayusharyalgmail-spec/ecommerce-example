@@ -9,6 +9,9 @@ export type TenantRef =
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/;
 export const SESSION_KEY = "tenant";
 
+export const DEFAULT_ROOT_DOMAIN = "amanaryal.com";
+export const SUPPORTED_ROOT_DOMAINS = ["amanaryal.com", "dumarwana.com"] as const;
+
 type Loc = { hostname: string; pathname: string; search: string };
 type Store = Pick<Storage, "getItem" | "setItem" | "removeItem"> | null;
 
@@ -21,10 +24,13 @@ export function basenameFor(ref: TenantRef): string {
 
 /**
  * Order: /s/:slug  >  ?tenant=slug (remembered for the tab)  >  subdomain / custom domain  >  remembered tenant (dev hosts only).
- * `ecommerce.<root>` is the flagship store; `www`, the bare root and localhost are the hub; any other subdomain is a vendor
- * store; an unrelated hostname is looked up as a custom_domain (the caller falls back to the flagship if nothing matches).
+ * Root domain defaults to amanaryal.com (with support for dumarwana.com / configured rootDomain).
+ * `amanaryal.com` / `dumarwana.com`, `www`, and bare localhost are the hub;
+ * any vendor subdomain (e.g. `myshop.amanaryal.com`, `family-mart.amanaryal.com`, `<vendor>.amanaryal.com`)
+ * resolves to a store with that tenant slug;
+ * an unrelated hostname is looked up as a custom_domain.
  */
-export function resolveTenantRef(loc: Loc, rootDomain: string | undefined, session: Store): TenantRef {
+export function resolveTenantRef(loc: Loc, rootDomain?: string, session?: Store): TenantRef {
   const read = () => { try { return session?.getItem(SESSION_KEY) ?? null; } catch { return null; } };
   const write = (v: string | null) => { try { if (v === null) session?.removeItem(SESSION_KEY); else session?.setItem(SESSION_KEY, v); } catch { /* storage blocked */ } };
 
@@ -36,15 +42,29 @@ export function resolveTenantRef(loc: Loc, rootDomain: string | undefined, sessi
   else if (q && SLUG_RE.test(q.toLowerCase())) { write(q.toLowerCase()); return { kind: "slug", slug: q.toLowerCase(), via: "query" }; }
 
   const host = loc.hostname.toLowerCase();
-  const root = rootDomain?.toLowerCase().replace(/^\./, "");
   const dev = isLocalHost(host);
-  if (!dev && root && (host === root || host.endsWith("." + root))) {
-    const sub = host === root ? "" : host.slice(0, -(root.length + 1));
+
+  // In local dev, also allow testing via <vendor>.localhost
+  if (dev && host.endsWith(".localhost")) {
+    const sub = host.slice(0, -".localhost".length);
     if (sub === "" || sub === "www") return { kind: "hub" };
     if (SLUG_RE.test(sub) || sub === "ecommerce") return { kind: "slug", slug: sub, via: "subdomain" };
-    return { kind: "hub" };
   }
-  if (!dev) return { kind: "domain", domain: host };
+
+  // Check candidate roots: explicit rootDomain (if provided), followed by default supported roots
+  const candidateRoots = Array.from(new Set([rootDomain, ...SUPPORTED_ROOT_DOMAINS].filter((d): d is string => Boolean(d))))
+    .map((d) => d.toLowerCase().replace(/^\./, ""));
+
+  if (!dev) {
+    const matchedRoot = candidateRoots.find((r) => host === r || host.endsWith("." + r));
+    if (matchedRoot) {
+      const sub = host === matchedRoot ? "" : host.slice(0, -(matchedRoot.length + 1));
+      if (sub === "" || sub === "www") return { kind: "hub" };
+      if (SLUG_RE.test(sub) || sub === "ecommerce") return { kind: "slug", slug: sub, via: "subdomain" };
+      return { kind: "hub" };
+    }
+    return { kind: "domain", domain: host };
+  }
 
   const saved = read();
   if (saved && SLUG_RE.test(saved)) return { kind: "slug", slug: saved, via: "session" };

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { activeTenantId } from "./tenantScope";
 import { useTenantKey } from "@/platform/TenantContext";
 
 // Mirrors app_private.role_permissions in SQL (DATABASE.md §11). Hiding UI is cosmetic only:
@@ -33,7 +34,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadPerms = useCallback(async (u: User | null) => {
     if (!u) { setPerms(new Set()); return; }
     const { data } = await supabase.from("staff_members").select("role,permissions,is_active").eq("user_id", u.id).maybeSingle();
-    setPerms(data?.is_active ? new Set([...(BY_ROLE[data.role] ?? []), ...(data.permissions ?? [])]) : new Set());
+    if (data?.is_active) {
+      setPerms(new Set([...(BY_ROLE[data.role] ?? []), ...(data.permissions ?? [])]));
+      return;
+    }
+    const tid = activeTenantId();
+    if (tid) {
+      const { data: member } = await supabase.from("tenant_members").select("role").eq("user_id", u.id).eq("tenant_id", tid).maybeSingle();
+      if (member?.role) {
+        setPerms(new Set(BY_ROLE[member.role] ?? []));
+        return;
+      }
+    }
+    setPerms(new Set());
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantKey]);
 

@@ -181,6 +181,62 @@ console.log("seed.sql (development data)");
   const fm = "(select id from public.tenants where slug='family-mart')";
   const c = (await q(`select (select count(*)::int from public.store_settings where tenant_id=${fm}) s, (select count(*)::int from public.products where tenant_id=${fm} and sku like 'FM-%') p, (select count(*)::int from public.delivery_zones where tenant_id=${fm}) z`))[0];
   check("seed: family-mart has its own settings, one zone and two products", c.s === 1 && c.p === 2 && c.z === 1, JSON.stringify(c));
+
+  // Seeded Super Admin check
+  const superAdmin = await q("select user_id from public.platform_admins where user_id = 'a0000000-0000-0000-0000-000000000001'");
+  check("seed: Super Admin user exists in platform_admins", superAdmin.length === 1);
+
+  // Seeded myshop tenant and tenant_members check
+  const myShopTenant = await q("select id, status, email from public.tenants where slug='myshop'");
+  check("seed: myshop tenant record exists and is active", myShopTenant.length === 1 && myShopTenant[0].status === "active");
+  const myShopId = myShopTenant[0].id;
+
+  const myShopMember = await q(`select user_id, role from public.tenant_members where tenant_id='${myShopId}' and user_id='a0000000-0000-0000-0000-000000000002'`);
+  check("seed: myshop dedicated admin is in tenant_members with role owner", myShopMember.length === 1 && myShopMember[0].role === "owner");
+
+  // Seeded family-mart tenant and tenant_members check
+  const fmTenant = await q("select id, status, email from public.tenants where slug='family-mart'");
+  check("seed: family-mart tenant record exists and is active", fmTenant.length === 1 && fmTenant[0].status === "active");
+  const fmId = fmTenant[0].id;
+
+  const fmMember = await q(`select user_id, role from public.tenant_members where tenant_id='${fmId}' and user_id='a0000000-0000-0000-0000-000000000003'`);
+  check("seed: family-mart dedicated admin is in tenant_members with role owner", fmMember.length === 1 && fmMember[0].role === "owner");
+
+  // Strict cross-tenant isolation checks between seeded myshop and family-mart admins
+  U.myShopAdmin = "a0000000-0000-0000-0000-000000000002";
+  U.fmAdmin = "a0000000-0000-0000-0000-000000000003";
+
+  const msZone = (await q(`select id from public.delivery_zones where tenant_id='${myShopId}'`))[0].id;
+  const msProd = (await q(`select id from public.products where tenant_id='${myShopId}'`))[0].id;
+  const msOrderCall = "select public.place_order($1,'ms-persist-1',$2::jsonb,$3,null,'cod','Gita','+9779800000002',null,'Gita','+9779800000002','Ktm',null,'Ktm','Ktm','en') j";
+  const msOrd = (await q(msOrderCall, [myShopId, item(msProd, 1), msZone]))[0].j;
+  const msOrdId = msOrd.id;
+
+  // myshop admin accessing myshop admin data
+  check("myshop admin can read orders in myshop context", (await as("myShopAdmin", myShopId, `select * from public.orders where id='${msOrdId}'`)).n === 1);
+  check("myshop admin can read staff_members in myshop context", (await as("myShopAdmin", myShopId, "select * from public.staff_members")).n >= 1);
+  // myshop admin accessing family-mart context -> explicitly blocked by RLS
+  check("myshop admin cannot read family-mart orders when accessing family-mart context", (await as("myShopAdmin", fmId, "select * from public.orders")).n === 0);
+  check("myshop admin cannot read staff_members when accessing family-mart context", (await as("myShopAdmin", fmId, "select * from public.staff_members")).n === 0);
+  check("myshop admin cannot update family-mart products", (await as("myShopAdmin", fmId, "update public.products set price_paisa=999")).n === 0);
+  check("myshop admin cannot delete family-mart products", (await as("myShopAdmin", fmId, "delete from public.products")).n === 0);
+  check("myshop admin cannot directly update family-mart orders", denied(await as("myShopAdmin", fmId, "update public.orders set customer_note='hacked'")));
+  check("myshop admin cannot directly delete family-mart orders", denied(await as("myShopAdmin", fmId, "delete from public.orders")));
+  const rMyShopToFm = await as("myShopAdmin", fmId, "select public.transition_order($1,'confirmed','ok') j", [first.id]);
+  check("myshop admin cannot transition family-mart orders", denied(rMyShopToFm));
+
+  // family-mart admin accessing family-mart admin data
+  check("fm admin can read orders in family-mart context", (await as("fmAdmin", fmId, `select * from public.orders where id='${first.id}'`)).n === 1);
+  check("fm admin can read staff_members in family-mart context", (await as("fmAdmin", fmId, "select * from public.staff_members")).n >= 1);
+  // family-mart admin accessing myshop context -> explicitly blocked by RLS
+  check("fm admin cannot read myshop orders when accessing myshop context", (await as("fmAdmin", myShopId, "select * from public.orders")).n === 0);
+  check("fm admin cannot read staff_members when accessing myshop context", (await as("fmAdmin", myShopId, "select * from public.staff_members")).n === 0);
+  check("fm admin cannot update myshop products", (await as("fmAdmin", myShopId, "update public.products set price_paisa=999")).n === 0);
+  check("fm admin cannot delete myshop products", (await as("fmAdmin", myShopId, "delete from public.products")).n === 0);
+  check("fm admin cannot directly update myshop orders", denied(await as("fmAdmin", myShopId, "update public.orders set customer_note='hacked'")));
+  check("fm admin cannot directly delete myshop orders", denied(await as("fmAdmin", myShopId, "delete from public.orders")));
+  const rFmToMyShop = await as("fmAdmin", myShopId, "select public.transition_order($1,'confirmed','ok') j", [msOrdId]);
+  check("fm admin cannot transition myshop orders", denied(rFmToMyShop));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

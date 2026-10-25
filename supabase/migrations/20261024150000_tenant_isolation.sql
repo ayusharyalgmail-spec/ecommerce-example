@@ -107,7 +107,10 @@ language plpgsql stable security definer set search_path = ''
 as $$ begin
   return exists (select 1 from public.staff_members s
     where s.user_id = auth.uid() and s.tenant_id = p_tenant and s.is_active
-      and (p = any(app_private.role_permissions(s.role)) or p = any(s.permissions)));
+      and (p = any(app_private.role_permissions(s.role)) or p = any(s.permissions)))
+    or exists (select 1 from public.tenant_members m
+    where m.user_id = auth.uid() and m.tenant_id = p_tenant
+      and p = any(app_private.role_permissions(m.role)));
 end $$;
 
 create or replace function app_private.has_permission(p text) returns boolean

@@ -5,9 +5,9 @@
 //   /_ui/shells/credits author and licence of every demo-catalogue photo (Creative Commons attribution)
 import { Routes, Route } from "react-router-dom";
 import AdminShell from "@/shell/AdminShell";
-import DashboardV2 from "@/admin/DashboardV2";
-import ProductsV2 from "@/admin/ProductsV2";
-import OrdersV2 from "@/admin/OrdersV2";
+import Dashboard from "@/admin/Dashboard";
+import Products from "@/admin/Products";
+import Orders from "@/admin/Orders";
 import { MockAuthProvider } from "@/lib/auth";
 import { useAdminMessages } from "@/lib/i18n";
 
@@ -43,9 +43,9 @@ export default function DevShells() {
       <Route path="throw" element={<Boom />} />
       <Route path="credits" element={<Credits />} />
       <Route path="admin" element={<MockAuthProvider perms={ALL}><AdminPreview /></MockAuthProvider>}>
-        <Route index element={<DashboardV2 />} />
-        <Route path="products" element={<ProductsV2 />} />
-        <Route path="orders" element={<OrdersV2 />} />
+        <Route index element={<Dashboard />} />
+        <Route path="products" element={<Products />} />
+        <Route path="orders" element={<Orders />} />
       </Route>
     </Routes>
   );

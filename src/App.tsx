@@ -17,16 +17,16 @@ import type { FeatureKey } from "@/platform/features";
 import { basenameFor, resolveTenantRef } from "@/platform/resolve";
 import { FeatureGate, StoreGate } from "@/platform/StoreGate";
 
-// Shop (Bazaar Glass v2 is the only storefront)
-const HomeV2 = lazy(() => import("@/catalog/HomeV2"));
-const ShopV2 = lazy(() => import("@/catalog/ShopV2"));
-const ProductV2 = lazy(() => import("@/catalog/ProductPageV2"));
-const CartV2 = lazy(() => import("@/checkout/CartV2"));
-const CheckoutV2 = lazy(() => import("@/checkout/CheckoutV2"));
-const TrackV2 = lazy(() => import("@/account/TrackV2"));
+// Shop (Bazaar Glass is the only storefront)
+const Home = lazy(() => import("@/catalog/Home"));
+const Shop = lazy(() => import("@/catalog/Shop"));
+const Product = lazy(() => import("@/catalog/ProductPage"));
+const Cart = lazy(() => import("@/checkout/Cart"));
+const Checkout = lazy(() => import("@/checkout/Checkout"));
+const Track = lazy(() => import("@/account/Track"));
 const Login = lazy(() => import("@/pages/Login"));
 import AuthCallback from "@/pages/AuthCallback";
-const AccountV2 = lazy(() => import("@/account/AccountV2"));
+const Account = lazy(() => import("@/account/Account"));
 import Wishlist from "@/pages/Wishlist";
 import Addresses from "@/pages/Addresses";
 import Invoice from "@/pages/Invoice";
@@ -53,16 +53,16 @@ const SettingsEditor = lazy(() => import("@/dashboard/SettingsEditor"));
 const UiGallery = import.meta.env.DEV ? lazy(() => import("@/pages/UiGallery")) : null;
 const DevShells = import.meta.env.DEV ? lazy(() => import("@/pages/DevShells")) : null;
 const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
-const DashboardV2 = lazy(() => import("@/admin/DashboardV2"));
-const AdminOrdersV2 = lazy(() => import("@/admin/OrdersV2"));
-const OrderDetailV2 = lazy(() => import("@/admin/OrderDetailV2"));
-const ProductsV2 = lazy(() => import("@/admin/ProductsV2"));
-const ProductEditV2 = lazy(() => import("@/admin/ProductEditV2"));
+const Dashboard = lazy(() => import("@/admin/Dashboard"));
+const AdminOrders = lazy(() => import("@/admin/Orders"));
+const OrderDetail = lazy(() => import("@/admin/OrderDetail"));
+const Products = lazy(() => import("@/admin/Products"));
+const ProductEdit = lazy(() => import("@/admin/ProductEdit"));
 const AdminReviews = lazy(() => import("@/pages/admin/Reviews"));
 const AdminCoupons = lazy(() => import("@/pages/admin/Coupons"));
 const AdminZones = lazy(() => import("@/pages/admin/Zones"));
 const AdminMoney = lazy(() => import("@/pages/admin/Money"));
-const ReportsV2 = lazy(() => import("@/admin/ReportsV2"));
+const Reports = lazy(() => import("@/admin/Reports"));
 const AdminImport = lazy(() => import("@/pages/admin/ImportExport"));
 const AdminStaff = lazy(() => import("@/pages/admin/Staff"));
 const AdminAudit = lazy(() => import("@/pages/admin/Audit"));
@@ -91,16 +91,16 @@ const storeRoutes: RouteObject[] = [
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [
-      { path: "/", element: lazyEl(<HomeV2 />) },
-      { path: "/shop", element: lazyEl(<ShopV2 />) },
-      { path: "/product/:slug", element: lazyEl(<ProductV2 />) },
-      { path: "/cart", element: lazyEl(<CartV2 />) },
-      { path: "/checkout", element: lazyEl(<CheckoutV2 />) },
-      { path: "/track", element: lazyEl(<TrackV2 />) },
+      { path: "/", element: lazyEl(<Home />) },
+      { path: "/shop", element: lazyEl(<Shop />) },
+      { path: "/product/:slug", element: lazyEl(<Product />) },
+      { path: "/cart", element: lazyEl(<Cart />) },
+      { path: "/checkout", element: lazyEl(<Checkout />) },
+      { path: "/track", element: lazyEl(<Track />) },
       { path: "/messages", element: gated("messaging", <MessagesPage />) },
       { path: "/login", element: lazyEl(<Login />) },
       { path: "/auth/callback", element: <AuthCallback /> },
-      { path: "/account", element: <RequireAuth>{lazyEl(<AccountV2 />)}</RequireAuth> },
+      { path: "/account", element: <RequireAuth>{lazyEl(<Account />)}</RequireAuth> },
       { path: "/account/wishlist", element: <RequireAuth><Wishlist /></RequireAuth> },
       { path: "/account/addresses", element: <RequireAuth><Addresses /></RequireAuth> },
       { path: "/orders/:id/invoice", element: <RequireAuth><Invoice /></RequireAuth> },
@@ -108,12 +108,12 @@ const storeRoutes: RouteObject[] = [
         path: "/admin",
         element: <RequireStaff>{lazyEl(<AdminLayout />)}</RequireStaff>,
         children: [
-          { index: true, element: lazyEl(<DashboardV2 />) },
-          { path: "orders", element: lazyEl(<AdminOrdersV2 />) },
-          { path: "orders/:id", element: lazyEl(<OrderDetailV2 />) },
-          { path: "products", element: lazyEl(<ProductsV2 />) },
-          { path: "products/new", element: lazyEl(<ProductEditV2 />) },
-          { path: "products/:id", element: lazyEl(<ProductEditV2 />) },
+          { index: true, element: lazyEl(<Dashboard />) },
+          { path: "orders", element: lazyEl(<AdminOrders />) },
+          { path: "orders/:id", element: lazyEl(<OrderDetail />) },
+          { path: "products", element: lazyEl(<Products />) },
+          { path: "products/new", element: lazyEl(<ProductEdit />) },
+          { path: "products/:id", element: lazyEl(<ProductEdit />) },
           { path: "reviews", element: gated("reviews", <AdminReviews />) },
           { path: "coupons", element: gated("coupons", <AdminCoupons />) },
           { path: "zones", element: lazyEl(<AdminZones />) },
@@ -121,7 +121,7 @@ const storeRoutes: RouteObject[] = [
           { path: "messages", element: gated("messaging", <AdminMessages />) },
           { path: "categories", element: lazyEl(<AdminCategories />) },
           { path: "storefront", element: lazyEl(<AdminStorefront />) },
-          { path: "reports", element: lazyEl(<ReportsV2 />) },
+          { path: "reports", element: lazyEl(<Reports />) },
           { path: "import", element: gated("pos_export", <AdminImport />) },
           { path: "staff", element: lazyEl(<AdminStaff />) },
           { path: "audit", element: lazyEl(<AdminAudit />) },
@@ -142,7 +142,8 @@ const hubRoutes: RouteObject[] = [
   { path: "/b/:slug", element: lazyEl(<BusinessLayout />), errorElement: <RouteError />, children: [{ index: true, element: lazyEl(<BusinessHome />) }] },
   { path: "/login", element: lazyEl(<Login />), errorElement: <RouteError /> },
   { path: "/auth/callback", element: <AuthCallback /> },
-  { path: "/platform-admin", element: <RequireAuth>{lazyEl(<PlatformAdmin />)}</RequireAuth>, errorElement: <RouteError /> },
+  { path: "/admin", element: <RequireAuth>{lazyEl(<PlatformAdmin />)}</RequireAuth>, errorElement: <RouteError /> },
+  { path: "/platform-admin", element: <Navigate to="/admin" replace /> },
   {
     path: "/dashboard", element: <RequireAuth>{lazyEl(<DashboardLayout />)}</RequireAuth>, errorElement: <RouteError />,
     children: [

@@ -1,5 +1,6 @@
-// Platform admin (hub only, route /platform-admin): list stores, open a storefront, activate/suspend, create a vendor store.
-// UI convenience only: every action is a platform_* RPC that re-checks platform_admins in Postgres.
+// Super Admin Portal (Hub mode only, route /admin on amanaryal.com):
+// List all onboarded vendors, display active status, onboard new vendors with initial Vendor Admin Gmail,
+// and strictly protect access to users whose auth.uid() exists in platform_admins.
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,23 +9,44 @@ import { useAuth } from "@/lib/auth";
 import { errorCode, supabase } from "@/lib/supabase";
 import { Alert, Badge, Button, Field, Input, Skeleton, Switch, toast } from "@/ui";
 import { FEATURE_KEYS, FLAGSHIP_SLUG, normalizeFeatures, type FeatureKey, type TenantFeatures } from "./features";
-import { SLUG_RE } from "./resolve";
+import { DEFAULT_ROOT_DOMAIN, SLUG_RE } from "./resolve";
 
-type Row = { id: string; slug: string; business_name: string; status: "draft" | "active" | "suspended"; custom_domain: string | null; features: unknown; created_at: string };
+type Row = {
+  id: string;
+  slug: string;
+  business_name: string;
+  email: string | null;
+  status: "draft" | "active" | "suspended";
+  custom_domain: string | null;
+  features: unknown;
+  created_at: string;
+};
 
 const FEATURE_LABEL: Record<FeatureKey, [string, string]> = {
-  coupons: ["Coupons", "कुपन"], campaigns: ["Campaigns", "अभियान"], ledger: ["Shop ledger (udhaar)", "खाता / उधारो"], messaging: ["Customer messaging", "ग्राहक सन्देश"],
-  min_order_qty: ["Minimum order quantity", "न्यूनतम अर्डर मात्रा"], reviews: ["Reviews", "समीक्षा"], pos_export: ["POS import / export", "POS आयात / निर्यात"],
+  coupons: ["Coupons", "कुपन"],
+  campaigns: ["Campaigns", "अभियान"],
+  ledger: ["Shop ledger (udhaar)", "खाता / उधारो"],
+  messaging: ["Customer messaging", "ग्राहक सन्देश"],
+  min_order_qty: ["Minimum order quantity", "न्यूनतम अर्डर मात्रा"],
+  reviews: ["Reviews", "समीक्षा"],
+  pos_export: ["POS import / export", "POS आयात / निर्यात"],
 };
+
 const NEXT_STATUS = { draft: "active", active: "suspended", suspended: "active" } as const;
 const STATUS_TONE = { draft: "neutral", active: "success", suspended: "danger" } as const;
 
 /** Maps Postgres/RPC failures to a short safe message (no SQL or stack traces reach the screen). */
 function friendly(message: string | undefined, locale: "en" | "ne"): string {
   const code = errorCode(message);
-  if (code === "FORBIDDEN") return pick(locale, "Only platform admins can do this.", "यो काम प्लेटफर्म एडमिनले मात्र गर्न सक्छन्।");
-  if (code === "VALIDATION_FAILED") return pick(locale, "Check the colour (#RRGGBB) and that the logo is an https link.", "रङ (#RRGGBB) र लोगो https लिङ्क हो कि जाँच गर्नुहोस्।");
-  if (/duplicate key|23505|already exists/i.test(message ?? "")) return pick(locale, "That store address or domain is already taken.", "यो पसलको ठेगाना वा डोमेन पहिल्यै प्रयोगमा छ।");
+  if (code === "FORBIDDEN" || /platform admin/i.test(message ?? "")) {
+    return pick(locale, "Only Super Admins (platform_admins) can do this.", "यो काम सुपर एडमिनले मात्र गर्न सक्छन्।");
+  }
+  if (code === "VALIDATION_FAILED") {
+    return pick(locale, "Check the colour (#RRGGBB) and that the logo is an https link.", "रङ (#RRGGBB) र लोगो https लिङ्क हो कि जाँच गर्नुहोस्।");
+  }
+  if (/duplicate key|23505|already exists/i.test(message ?? "")) {
+    return pick(locale, "That store slug or custom domain is already taken.", "यो पसलको स्लग वा डोमेन पहिल्यै प्रयोगमा छ।");
+  }
   return pick(locale, "Something went wrong. Try again.", "केही गडबड भयो। फेरि प्रयास गर्नुहोस्।");
 }
 
@@ -44,77 +66,232 @@ function TenantCard({ row, onChanged }: { row: Row; onChanged: () => void }) {
   const flagship = row.slug === FLAGSHIP_SLUG;
   const [open, setOpen] = useState(false);
   const [feat, setFeat] = useState<TenantFeatures>(() => normalizeFeatures(row.features));
-  const status = useMutation({
-    mutationFn: async () => { const { error } = await supabase.rpc("platform_set_tenant_status", { p_tenant: row.id, p_status: NEXT_STATUS[row.status] }); if (error) throw new Error(error.message); },
-    onSuccess: () => { toast.success(pick(locale, "Status updated", "स्थिति अद्यावधिक भयो")); onChanged(); },
+
+  const statusMutation = useMutation({
+    mutationFn: async () => {
+      const next = NEXT_STATUS[row.status];
+      const { error } = await supabase.rpc("platform_set_tenant_status", { p_tenant: row.id, p_status: next });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success(pick(locale, "Status updated successfully", "स्थिति अद्यावधिक भयो"));
+      onChanged();
+    },
     onError: (e: Error) => toast.error(friendly(e.message, locale)),
   });
-  const save = useMutation({
-    mutationFn: async () => { const { error } = await supabase.rpc("platform_set_tenant_features", { p_tenant: row.id, p_features: feat }); if (error) throw new Error(error.message); },
-    onSuccess: () => { toast.success(pick(locale, "Features saved", "सुविधाहरू सुरक्षित भए")); onChanged(); },
+
+  const saveFeatures = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("platform_set_tenant_features", { p_tenant: row.id, p_features: feat });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success(pick(locale, "Features saved successfully", "सुविधाहरू सुरक्षित भए"));
+      onChanged();
+    },
     onError: (e: Error) => toast.error(friendly(e.message, locale)),
   });
+
   const actionLabel = row.status === "active" ? pick(locale, "Suspend", "निलम्बन") : pick(locale, "Activate", "सक्रिय गर्नुहोस्");
+  const subdomain = `${row.slug}.${DEFAULT_ROOT_DOMAIN}`;
+
   return (
-    <li className="rounded-lg border border-line bg-surface p-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <li className="rounded-xl border border-line bg-surface p-4 shadow-xs transition-colors hover:border-ink/20">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="m-0 truncate font-semibold text-ink">{row.business_name}</p>
-          <p className="m-0 truncate text-sm text-muted">{row.slug}{row.custom_domain ? ` · ${row.custom_domain}` : ""}</p>
+          <div className="flex items-center gap-2">
+            <p className="m-0 truncate font-semibold text-ink text-base">{row.business_name}</p>
+            <Badge tone={STATUS_TONE[row.status]}>{row.status.toUpperCase()}</Badge>
+          </div>
+          <p className="m-0 truncate text-xs text-muted mt-0.5">
+            <span className="font-mono text-ink/80">{subdomain}</span>
+            {row.custom_domain ? ` · ${row.custom_domain}` : ""}
+            {row.email ? ` · Admin: ${row.email}` : ""}
+          </p>
         </div>
-        <Badge tone={STATUS_TONE[row.status]}>{row.status}</Badge>
-        <a href={`/s/${row.slug}/`} target="_blank" rel="noreferrer" className="text-sm font-semibold underline">{pick(locale, "Open storefront", "पसल खोल्नुहोस्")}</a>
-        <Button size="sm" variant="secondary" disabled={flagship && row.status === "active"} loading={status.isPending} onClick={() => status.mutate()}>{actionLabel}</Button>
-        <Button size="sm" variant="ghost" aria-expanded={open} onClick={() => setOpen((o) => !o)}>{pick(locale, "Features", "सुविधा")}</Button>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/s/${row.slug}/`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-semibold text-accent hover:underline px-2 py-1"
+          >
+            {pick(locale, "Storefront ↗", "पसल हेर्नुहोस् ↗")}
+          </a>
+          <a
+            href={`/s/${row.slug}/admin`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-semibold text-muted hover:text-ink hover:underline px-2 py-1"
+          >
+            {pick(locale, "Store Admin ↗", "पसल एडमिन ↗")}
+          </a>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={flagship && row.status === "active"}
+            loading={statusMutation.isPending}
+            onClick={() => statusMutation.mutate()}
+          >
+            {actionLabel}
+          </Button>
+          <Button size="sm" variant="ghost" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            {pick(locale, "Features", "सुविधा")}
+          </Button>
+        </div>
       </div>
       {open && (
         <div className="mt-3 border-t border-line pt-3">
-          {flagship && <p className="m-0 mb-2 text-sm text-muted">{pick(locale, "The flagship store always has every feature.", "मुख्य पसलमा सबै सुविधा सधैं सक्रिय हुन्छन्।")}</p>}
-          <FeatureSwitches value={flagship ? normalizeFeatures(Object.fromEntries(FEATURE_KEYS.map((k) => [k, true]))) : feat} onChange={(k, v) => setFeat((f) => ({ ...f, [k]: v }))} disabled={flagship} />
-          {!flagship && <Button size="sm" className="mt-2" loading={save.isPending} onClick={() => save.mutate()}>{pick(locale, "Save features", "सुविधा सुरक्षित गर्नुहोस्")}</Button>}
+          {flagship && <p className="m-0 mb-2 text-xs text-muted">{pick(locale, "The flagship store always has every feature enabled.", "मुख्य पसलमा सबै सुविधा सधैं सक्रिय हुन्छन्।")}</p>}
+          <FeatureSwitches
+            value={flagship ? normalizeFeatures(Object.fromEntries(FEATURE_KEYS.map((k) => [k, true]))) : feat}
+            onChange={(k, v) => setFeat((f) => ({ ...f, [k]: v }))}
+            disabled={flagship}
+          />
+          {!flagship && (
+            <Button size="sm" className="mt-3" loading={saveFeatures.isPending} onClick={() => saveFeatures.mutate()}>
+              {pick(locale, "Save features", "सुविधा सुरक्षित गर्नुहोस्")}
+            </Button>
+          )}
         </div>
       )}
     </li>
   );
 }
 
-function CreateStore({ onCreated }: { onCreated: () => void }) {
+function OnboardVendorForm({ onCreated }: { onCreated: () => void }) {
   const { locale } = useT();
-  const [f, setF] = useState({ name: "", slug: "", domain: "", owner: "", color: "#E8A317", logo: "" });
-  const [feat, setFeat] = useState<TenantFeatures>(() => normalizeFeatures({ reviews: true, min_order_qty: true }));
+  const [form, setForm] = useState({
+    name: "",
+    slug: "",
+    adminGmail: "",
+    domain: "",
+    color: "#2563EB",
+    logo: "",
+  });
+  const [features, setFeatures] = useState<TenantFeatures>(() =>
+    normalizeFeatures({ reviews: true, min_order_qty: true, coupons: true, ledger: true })
+  );
   const [err, setErr] = useState<string | null>(null);
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
-  const slugOk = SLUG_RE.test(f.slug);
-  const create = useMutation({
+
+  const setField = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const slugOk = SLUG_RE.test(form.slug);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.adminGmail.trim());
+
+  const createMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.rpc("platform_create_store", {
-        p_slug: f.slug, p_name: f.name.trim(), p_owner_email: f.owner.trim() || null, p_custom_domain: f.domain.trim() || null,
-        p_brand: f.color, p_logo_path: f.logo.trim() || null, p_features: feat,
+        p_slug: form.slug,
+        p_name: form.name.trim(),
+        p_owner_email: form.adminGmail.trim() || null,
+        p_custom_domain: form.domain.trim() || null,
+        p_brand: form.color,
+        p_logo_path: form.logo.trim() || null,
+        p_features: features,
       });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { toast.success(pick(locale, "Store created as a draft. Activate it when it is ready.", "पसल ड्राफ्टमा बन्यो। तयार भएपछि सक्रिय गर्नुहोस्।")); setF({ name: "", slug: "", domain: "", owner: "", color: "#E8A317", logo: "" }); setErr(null); onCreated(); },
+    onSuccess: () => {
+      toast.success(pick(locale, "Vendor onboarded successfully! Set to draft status.", "नयाँ भेन्डर सफलतापूर्वक थपियो!"));
+      setForm({ name: "", slug: "", adminGmail: "", domain: "", color: "#2563EB", logo: "" });
+      setErr(null);
+      onCreated();
+    },
     onError: (e: Error) => setErr(friendly(e.message, locale)),
   });
+
   return (
-    <form className="space-y-3 rounded-lg border border-line bg-surface p-4" onSubmit={(e) => { e.preventDefault(); if (slugOk && f.name.trim()) create.mutate(); }}>
-      <h2 className="m-0 text-lg font-bold">{pick(locale, "Create vendor store", "नयाँ भेन्डर पसल बनाउनुहोस्")}</h2>
-      {err && <Alert tone="danger">{err}</Alert>}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label={pick(locale, "Store name", "पसलको नाम")} required>{(a) => <Input {...a} value={f.name} onChange={set("name")} maxLength={80} />}</Field>
-        <Field label={pick(locale, "Address (slug)", "ठेगाना (स्लग)")} required hint="family-mart" error={f.slug && !slugOk ? pick(locale, "Lowercase letters, digits and dashes, 3-50 characters.", "सानो अक्षर, अङ्क र ड्यास, ३-५० अक्षर।") : undefined}>
-          {(a) => <Input {...a} value={f.slug} onChange={(e) => setF((x) => ({ ...x, slug: e.target.value.toLowerCase() }))} autoCapitalize="none" />}
-        </Field>
-        <Field label={pick(locale, "Owner email (optional)", "मालिकको इमेल (ऐच्छिक)")}>{(a) => <Input {...a} type="email" value={f.owner} onChange={set("owner")} />}</Field>
-        <Field label={pick(locale, "Custom domain (optional)", "आफ्नै डोमेन (ऐच्छिक)")} hint="shop.example.com">{(a) => <Input {...a} value={f.domain} onChange={set("domain")} autoCapitalize="none" />}</Field>
-        <Field label={pick(locale, "Brand colour", "ब्रान्ड रङ")}>{(a) => <Input {...a} type="color" value={f.color} onChange={set("color")} className="h-12 p-1" />}</Field>
-        <Field label={pick(locale, "Logo URL (https, optional)", "लोगो URL (https, ऐच्छिक)")}>{(a) => <Input {...a} type="url" value={f.logo} onChange={set("logo")} />}</Field>
+    <form
+      className="space-y-4 rounded-xl border border-line bg-surface p-5 shadow-xs"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (slugOk && form.name.trim() && emailValid) {
+          createMutation.mutate();
+        }
+      }}
+    >
+      <div>
+        <h2 className="m-0 text-lg font-bold text-ink">{pick(locale, "Onboard New Vendor", "नयाँ भेन्डर दर्ता गर्नुहोस्")}</h2>
+        <p className="m-0 text-xs text-muted mt-1">
+          {pick(
+            locale,
+            "Assign initial store details and initial Vendor Admin Gmail for isolated access.",
+            "भेन्डरको स्टोरको नाम, स्लग, र प्रारम्भिक एडमिनको जिमेल तोक्नुहोस्।"
+          )}
+        </p>
       </div>
+
+      {err && <Alert tone="danger">{err}</Alert>}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label={pick(locale, "Store Name", "पसलको नाम")} required>
+          {(a) => <Input {...a} value={form.name} onChange={setField("name")} placeholder="My Shop" maxLength={80} />}
+        </Field>
+
+        <Field
+          label={pick(locale, "Subdomain Slug", "ठेगाना (स्लग)")}
+          required
+          hint={`e.g. myshop -> myshop.${DEFAULT_ROOT_DOMAIN}`}
+          error={form.slug && !slugOk ? pick(locale, "Lowercase letters, numbers and dashes, 3-50 chars.", "सानो अक्षर, अङ्क र ड्यास, ३-५० अक्षर।") : undefined}
+        >
+          {(a) => (
+            <Input
+              {...a}
+              value={form.slug}
+              onChange={(e) => setForm((x) => ({ ...x, slug: e.target.value.toLowerCase() }))}
+              placeholder="myshop"
+              autoCapitalize="none"
+            />
+          )}
+        </Field>
+
+        <Field
+          label={pick(locale, "Initial Vendor Admin Gmail", "भेन्डर एडमिन जिमेल")}
+          required
+          hint={pick(locale, "The vendor admin who will have isolated rights to this store.", "यो स्टोर व्यवस्थापन गर्ने एडमिनको इमेल")}
+          error={form.adminGmail && !emailValid ? pick(locale, "Enter a valid email address.", "मान्य इमेल ठेगाना प्रविष्ट गर्नुहोस्।") : undefined}
+        >
+          {(a) => (
+            <Input
+              {...a}
+              type="email"
+              value={form.adminGmail}
+              onChange={setField("adminGmail")}
+              placeholder="vendor@gmail.com"
+              required
+            />
+          )}
+        </Field>
+
+        <Field label={pick(locale, "Custom Domain (optional)", "आफ्नै डोमेन (ऐच्छिक)")} hint="shop.example.com">
+          {(a) => <Input {...a} value={form.domain} onChange={setField("domain")} autoCapitalize="none" placeholder="shop.example.com" />}
+        </Field>
+
+        <Field label={pick(locale, "Brand Colour", "ब्रान्ड रङ")}>
+          {(a) => <Input {...a} type="color" value={form.color} onChange={setField("color")} className="h-10 p-1 cursor-pointer" />}
+        </Field>
+
+        <Field label={pick(locale, "Logo URL (https, optional)", "लोगो URL (https, ऐच्छिक)")}>
+          {(a) => <Input {...a} type="url" value={form.logo} onChange={setField("logo")} placeholder="https://..." />}
+        </Field>
+      </div>
+
       <fieldset className="m-0 border-0 p-0">
-        <legend className="mb-1 font-semibold">{pick(locale, "Features", "सुविधाहरू")}</legend>
-        <FeatureSwitches value={feat} onChange={(k, v) => setFeat((x) => ({ ...x, [k]: v }))} />
+        <legend className="mb-2 font-semibold text-sm text-ink">{pick(locale, "Store Features", "स्टोर सुविधाहरू")}</legend>
+        <FeatureSwitches value={features} onChange={(k, v) => setFeatures((x) => ({ ...x, [k]: v }))} />
       </fieldset>
-      <Button type="submit" loading={create.isPending} disabled={!slugOk || !f.name.trim()}>{pick(locale, "Create store", "पसल बनाउनुहोस्")}</Button>
+
+      <div className="pt-2">
+        <Button
+          type="submit"
+          loading={createMutation.isPending}
+          disabled={!slugOk || !form.name.trim() || !emailValid}
+        >
+          {pick(locale, "Onboard Vendor", "भेन्डर अनबोर्ड गर्नुहोस्")}
+        </Button>
+      </div>
     </form>
   );
 }
@@ -123,42 +300,134 @@ export default function PlatformAdmin() {
   const { locale } = useT();
   const { user } = useAuth();
   const qc = useQueryClient();
-  const admin = useQuery({
-    queryKey: ["platform-admin", "is-admin", user?.id], enabled: !!user, staleTime: 60_000, retry: false,
-    queryFn: async () => { const { data, error } = await supabase.rpc("is_platform_admin"); if (error) throw new Error(error.message); return data === true; },
+
+  // Strict Protection: verify user's auth.uid() in public.platform_admins table
+  const adminQuery = useQuery({
+    queryKey: ["platform-admin", "is-admin", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    retry: false,
+    queryFn: async (): Promise<boolean> => {
+      if (!user) return false;
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc("is_platform_admin");
+      if (!rpcErr && typeof rpcRes === "boolean") return rpcRes;
+      const { data, error } = await supabase
+        .from("platform_admins")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!error && data?.user_id) return true;
+      return false;
+    },
   });
-  const tenants = useQuery({
-    queryKey: ["platform-admin", "tenants"], enabled: admin.data === true, staleTime: 10_000,
+
+  const tenantsQuery = useQuery({
+    queryKey: ["platform-admin", "tenants"],
+    enabled: adminQuery.data === true,
+    staleTime: 10_000,
     queryFn: async (): Promise<Row[]> => {
-      const { data, error } = await supabase.from("tenants").select("id,slug,business_name,status,custom_domain,features,created_at").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("id,slug,business_name,email,status,custom_domain,features,created_at")
+        .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []) as Row[];
     },
   });
+
   const refresh = () => void qc.invalidateQueries({ queryKey: ["platform-admin", "tenants"] });
 
-  if (admin.isLoading) return <main className="mx-auto max-w-3xl space-y-3 p-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-24" /></main>;
-  if (admin.data !== true) {
+  if (adminQuery.isLoading) {
     return (
-      <main className="mx-auto max-w-md space-y-3 p-8 text-center">
-        <h1 className="m-0 text-2xl font-bold">{pick(locale, "Unauthorized", "अनधिकृत")}</h1>
-        <p className="m-0 text-muted">{pick(locale, "Only platform admins can open this page.", "यो पृष्ठ प्लेटफर्म एडमिनले मात्र खोल्न सक्छन्।")}</p>
-        <Link to="/network" className="font-semibold underline">{pick(locale, "Back to the directory", "निर्देशिकामा फर्कनुहोस्")}</Link>
+      <main className="mx-auto max-w-4xl space-y-4 p-6">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-32" />
+        <Skeleton className="h-48" />
       </main>
     );
   }
+
+  // Blocked for non-super-admins
+  if (adminQuery.data !== true) {
+    return (
+      <main className="mx-auto max-w-md space-y-4 p-8 text-center mt-12">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-danger/10 text-danger text-2xl font-bold">
+          ✕
+        </div>
+        <h1 className="m-0 text-2xl font-bold text-ink">{pick(locale, "Access Denied", "पहुँच अस्वीकृत")}</h1>
+        <p className="m-0 text-sm text-muted">
+          {pick(
+            locale,
+            "Only Super Admins whose auth.uid() exists in the platform_admins table can access this dashboard.",
+            "यो पृष्ठ केवल platform_admins तालिकामा सूचीकृत सुपर एडमिनहरूले मात्र खोल्न सक्छन्।"
+          )}
+        </p>
+        <div className="pt-2">
+          <Link to="/network" className="text-sm font-semibold text-accent underline">
+            {pick(locale, "Return to Business Directory", "निर्देशिकामा फर्कनुहोस्")}
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const vendors = tenantsQuery.data ?? [];
+  const activeCount = vendors.filter((v) => v.status === "active").length;
+  const draftCount = vendors.filter((v) => v.status === "draft").length;
+  const suspendedCount = vendors.filter((v) => v.status === "suspended").length;
+
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-4 py-6">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="m-0 text-2xl font-bold">{pick(locale, "Platform admin", "प्लेटफर्म एडमिन")}</h1>
-        <Link to="/network" className="text-sm font-semibold underline">{pick(locale, "Directory", "निर्देशिका")}</Link>
+    <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+        <div>
+          <h1 className="m-0 text-2xl font-bold text-ink">
+            {pick(locale, "Super Admin Dashboard", "सुपर एडमिन ड्यासबोर्ड")}
+          </h1>
+          <p className="m-0 text-xs text-muted mt-1">
+            {pick(locale, `Multi-Tenant Control Plane (${DEFAULT_ROOT_DOMAIN})`, `बहु-भेन्डर नियन्त्रण कक्ष (${DEFAULT_ROOT_DOMAIN})`)}
+          </p>
+        </div>
+        <div className="flex items-center gap-4 text-xs font-semibold">
+          <span className="text-success font-medium">● {activeCount} Active</span>
+          <span className="text-muted font-medium">○ {draftCount} Draft</span>
+          <span className="text-danger font-medium">✕ {suspendedCount} Suspended</span>
+          <Link to="/network" className="text-accent underline ml-2">
+            {pick(locale, "Directory", "निर्देशिका")}
+          </Link>
+        </div>
       </header>
-      <section aria-label={pick(locale, "Stores", "पसलहरू")} className="space-y-2">
-        {tenants.isError && <Alert tone="danger">{pick(locale, "Could not load stores.", "पसलहरू लोड गर्न सकिएन।")}</Alert>}
-        {tenants.isLoading && <Skeleton className="h-24" />}
-        <ul className="m-0 list-none space-y-2 p-0">{(tenants.data ?? []).map((t) => <TenantCard key={t.id} row={t} onChanged={refresh} />)}</ul>
+
+      <section aria-label={pick(locale, "Onboarded Vendors", "दर्ता भएका भेन्डरहरू")} className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="m-0 text-base font-bold text-ink">
+            {pick(locale, "Onboarded Vendors", "दर्ता भएका भेन्डरहरू")} ({vendors.length})
+          </h2>
+          <Button size="sm" variant="ghost" onClick={refresh}>
+            {pick(locale, "Refresh", "ताजा गर्नुहोस्")}
+          </Button>
+        </div>
+
+        {tenantsQuery.isError && (
+          <Alert tone="danger">{pick(locale, "Could not load vendors list.", "भेन्डर सूची लोड गर्न सकिएन।")}</Alert>
+        )}
+
+        {tenantsQuery.isLoading && <Skeleton className="h-28" />}
+
+        {vendors.length === 0 && !tenantsQuery.isLoading && (
+          <div className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-muted">
+            {pick(locale, "No vendors found. Onboard the first vendor below.", "कुनै भेन्डर भेटिएन। तल नयाँ भेन्डर थप्नुहोस्।")}
+          </div>
+        )}
+
+        <ul className="m-0 list-none space-y-2 p-0">
+          {vendors.map((t) => (
+            <TenantCard key={t.id} row={t} onChanged={refresh} />
+          ))}
+        </ul>
       </section>
-      <CreateStore onCreated={refresh} />
+
+      <OnboardVendorForm onCreated={refresh} />
     </main>
   );
 }
+

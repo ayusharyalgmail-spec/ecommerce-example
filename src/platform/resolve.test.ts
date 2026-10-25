@@ -44,4 +44,48 @@ describe("resolveTenantRef", () => {
   it("works without a configured root domain", () => {
     expect(resolveTenantRef(at("ecommerce-dumarwana.vercel.app"), undefined, s)).toEqual({ kind: "domain", domain: "ecommerce-dumarwana.vercel.app" });
   });
+
+  describe("amanaryal.com multi-vendor routing", () => {
+    it("amanaryal.com and www are the hub", () => {
+      expect(resolveTenantRef(at("amanaryal.com"), undefined, s)).toEqual({ kind: "hub" });
+      expect(resolveTenantRef(at("www.amanaryal.com"), undefined, s)).toEqual({ kind: "hub" });
+    });
+
+    it("myshop.amanaryal.com resolves to store with slug myshop", () => {
+      expect(resolveTenantRef(at("myshop.amanaryal.com"), undefined, s)).toEqual({
+        kind: "slug",
+        slug: "myshop",
+        via: "subdomain",
+      });
+    });
+
+    it("family-mart.amanaryal.com resolves to store with slug family-mart", () => {
+      expect(resolveTenantRef(at("family-mart.amanaryal.com"), undefined, s)).toEqual({
+        kind: "slug",
+        slug: "family-mart",
+        via: "subdomain",
+      });
+    });
+
+    it("dynamically scales for any <vendor>.amanaryal.com subdomain", () => {
+      expect(resolveTenantRef(at("bobs-bakery.amanaryal.com"), undefined, s)).toEqual({
+        kind: "slug",
+        slug: "bobs-bakery",
+        via: "subdomain",
+      });
+      expect(resolveTenantRef(at("electronics-99.amanaryal.com"), undefined, s)).toEqual({
+        kind: "slug",
+        slug: "electronics-99",
+        via: "subdomain",
+      });
+    });
+
+    it("supports <vendor>.localhost in local development", () => {
+      expect(resolveTenantRef(at("myshop.localhost"), undefined, s)).toEqual({
+        kind: "slug",
+        slug: "myshop",
+        via: "subdomain",
+      });
+    });
+  });
 });

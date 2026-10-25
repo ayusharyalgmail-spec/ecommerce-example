@@ -36,4 +36,9 @@ describe("TenantProvider", () => {
     show({ kind: "slug", slug: "nope-store", via: "query" });
     await waitFor(() => expect(screen.getByTestId("p").textContent).toContain("TENANT_NOT_FOUND"));
   });
+  it("vendor store resolved via subdomain loads tenant record", async () => {
+    rpc.mockResolvedValueOnce({ data: { id: "t-myshop", slug: "myshop", features: { coupons: true } }, error: null });
+    show({ kind: "slug", slug: "myshop", via: "subdomain" });
+    await waitFor(() => expect(screen.getByTestId("p").textContent).toBe("store|myshop|t-myshop|false|true|false|"));
+  });
 });
