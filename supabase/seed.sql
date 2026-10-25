@@ -68,6 +68,17 @@ on conflict (slug) do update set
   email = 'admin@family-mart.amanaryal.com',
   features = '{"coupons":true,"campaigns":false,"ledger":false,"messaging":false,"min_order_qty":true,"reviews":true,"pos_export":false}';
 
+-- ============================================================
+-- 6. Vendor Store: ayush (Primary Store for ayush.amanaryal.com)
+-- ============================================================
+insert into public.tenants (slug, business_name, tagline, business_type, status, brand_primary, email, features)
+values ('ayush', 'Ayush', 'Everyday essentials, delivered locally.', 'General store', 'active', '#2563EB', 'ayusharyalgmail@gmail.com',
+  '{"coupons":true,"campaigns":true,"ledger":true,"messaging":true,"min_order_qty":true,"reviews":true,"pos_export":true}')
+on conflict (slug) do update set
+  status = 'active',
+  email = 'ayusharyalgmail@gmail.com',
+  features = '{"coupons":true,"campaigns":true,"ledger":true,"messaging":true,"min_order_qty":true,"reviews":true,"pos_export":true}';
+
 -- Link Dedicated Admin Users in tenant_members & seed operational store data
 do $$
 declare

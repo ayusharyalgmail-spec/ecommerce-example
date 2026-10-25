@@ -72,3 +72,21 @@ export function resolveTenantRef(loc: Loc, rootDomain?: string, session?: Store)
 }
 
 export const isFlagship = (ref: TenantRef) => ref.kind === "slug" && ref.slug === FLAGSHIP_SLUG;
+
+/**
+ * If visiting the root domain (amanaryal.com or www.amanaryal.com),
+ * automatically redirect to https://ayush.amanaryal.com/ (preserving path/query,
+ * while allowing /admin for Super Admin access).
+ */
+export function shouldRedirectRootDomain(loc: Loc): string | null {
+  const host = loc.hostname.toLowerCase();
+  if (host === "amanaryal.com" || host === "www.amanaryal.com") {
+    const p = loc.pathname.toLowerCase();
+    // Allow platform admin, auth callbacks, and login to be reached directly on root domain
+    if (!p.startsWith("/admin") && !p.startsWith("/auth") && !p.startsWith("/login")) {
+      const path = loc.pathname === "" ? "/" : loc.pathname;
+      return `https://ayush.amanaryal.com${path}${loc.search}`;
+    }
+  }
+  return null;
+}

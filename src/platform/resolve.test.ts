@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { resolveTenantRef, basenameFor, SESSION_KEY } from "./resolve";
+import { resolveTenantRef, basenameFor, SESSION_KEY, shouldRedirectRootDomain } from "./resolve";
 
 const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) }; };
 const at = (hostname: string, pathname = "/", search = "") => ({ hostname, pathname, search });
@@ -87,5 +87,43 @@ describe("resolveTenantRef", () => {
         via: "subdomain",
       });
     });
+
+    it("ayush.amanaryal.com resolves to store with slug ayush", () => {
+      expect(resolveTenantRef(at("ayush.amanaryal.com"), undefined, s)).toEqual({
+        kind: "slug",
+        slug: "ayush",
+        via: "subdomain",
+      });
+    });
+  });
+
+  describe("shouldRedirectRootDomain", () => {
+    it("redirects amanaryal.com to https://ayush.amanaryal.com/", () => {
+      expect(shouldRedirectRootDomain(at("amanaryal.com", "/"))).toBe("https://ayush.amanaryal.com/");
+      expect(shouldRedirectRootDomain(at("amanaryal.com", ""))).toBe("https://ayush.amanaryal.com/");
+    });
+
+    it("redirects www.amanaryal.com to https://ayush.amanaryal.com/", () => {
+      expect(shouldRedirectRootDomain(at("www.amanaryal.com", "/"))).toBe("https://ayush.amanaryal.com/");
+    });
+
+    it("preserves paths and queries when redirecting from amanaryal.com", () => {
+      expect(shouldRedirectRootDomain(at("amanaryal.com", "/shop", "?sort=price"))).toBe("https://ayush.amanaryal.com/shop?sort=price");
+      expect(shouldRedirectRootDomain(at("amanaryal.com", "/network"))).toBe("https://ayush.amanaryal.com/network");
+    });
+
+    it("does not redirect platform admin or auth routes (retains Super Admin access on root)", () => {
+      expect(shouldRedirectRootDomain(at("amanaryal.com", "/admin"))).toBeNull();
+      expect(shouldRedirectRootDomain(at("amanaryal.com", "/admin/orders"))).toBeNull();
+      expect(shouldRedirectRootDomain(at("amanaryal.com", "/auth/callback"))).toBeNull();
+      expect(shouldRedirectRootDomain(at("amanaryal.com", "/login"))).toBeNull();
+    });
+
+    it("does not redirect localhost or other domains", () => {
+      expect(shouldRedirectRootDomain(at("localhost", "/"))).toBeNull();
+      expect(shouldRedirectRootDomain(at("ayush.amanaryal.com", "/"))).toBeNull();
+      expect(shouldRedirectRootDomain(at("dumarwana.com", "/"))).toBeNull();
+    });
   });
 });
+

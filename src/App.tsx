@@ -14,7 +14,7 @@ import { ToastHost } from "@/ui";
 import { RequireAuth, RequireStaff } from "@/components/ui";
 import { TenantProvider, useTenant } from "@/platform/TenantContext";
 import type { FeatureKey } from "@/platform/features";
-import { basenameFor, resolveTenantRef } from "@/platform/resolve";
+import { basenameFor, resolveTenantRef, shouldRedirectRootDomain } from "@/platform/resolve";
 import { FeatureGate, StoreGate } from "@/platform/StoreGate";
 
 // Shop (Bazaar Glass is the only storefront)
@@ -77,6 +77,14 @@ const MessagesPage = lazy(() => loadMsgMessages().then(() => import("@/messaging
 const platformClient = new QueryClient();
 
 const safeSession = () => { try { return window.sessionStorage; } catch { return null; } };
+/** Immediate root domain redirect: amanaryal.com -> https://ayush.amanaryal.com/ */
+if (typeof window !== "undefined") {
+  const target = shouldRedirectRootDomain(window.location);
+  if (target) {
+    try { window.location.replace(target); } catch {}
+  }
+}
+
 /** Resolved once per page load: the tenant never changes without a navigation that reloads the app. */
 const tenantRef = resolveTenantRef(window.location, import.meta.env.VITE_ROOT_DOMAIN as string | undefined, safeSession());
 const isHub = tenantRef.kind === "hub";
@@ -137,7 +145,17 @@ const storeRoutes: RouteObject[] = [
 
 /** Hub: the vendor directory, public business pages and the vendor dashboard. */
 const hubRoutes: RouteObject[] = [
-  { path: "/", element: <Navigate to="/network" replace /> },
+  {
+    path: "/",
+    element: (() => {
+      const target = typeof window !== "undefined" ? shouldRedirectRootDomain(window.location) : null;
+      if (target) {
+        window.location.replace(target);
+        return null;
+      }
+      return <Navigate to="/network" replace />;
+    })(),
+  },
   { path: "/network", element: lazyEl(<NetworkLayout />), errorElement: <RouteError />, children: [{ index: true, element: lazyEl(<NetworkHome />) }, { path: "about", element: lazyEl(<AboutPlatform />) }] },
   { path: "/b/:slug", element: lazyEl(<BusinessLayout />), errorElement: <RouteError />, children: [{ index: true, element: lazyEl(<BusinessHome />) }] },
   { path: "/login", element: lazyEl(<Login />), errorElement: <RouteError /> },

@@ -11,6 +11,21 @@
     <link rel="preload" href="/fonts/mukta-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/mukta-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
     <script>
+      // Immediate root domain redirect: amanaryal.com -> ayush.amanaryal.com
+      (function () {
+        try {
+          var h = window.location.hostname.toLowerCase();
+          if (h === "amanaryal.com" || h === "www.amanaryal.com") {
+            var p = window.location.pathname.toLowerCase();
+            if (!p.startsWith("/admin") && !p.startsWith("/auth") && !p.startsWith("/login")) {
+              var target = "https://ayush.amanaryal.com" + (window.location.pathname === "" ? "/" : window.location.pathname) + window.location.search + window.location.hash;
+              window.location.replace(target);
+              return;
+            }
+          }
+        } catch (e) {}
+      })();
+
       // Runs before first paint: apply the saved theme and effects tier (no flash), and preload the
       // Devanagari face when the saved language is Nepali (those files are large, so only then).
       (function () {
