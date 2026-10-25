@@ -83,7 +83,7 @@ export default function Cart() {
             return (
               <li key={i.productId} className="flex gap-3 p-3 sm:gap-4 sm:p-4">
                 <span className="size-20 shrink-0 overflow-hidden rounded-md bg-surface-2 sm:size-24">
-                  {l?.image ? <img src={imageUrl(l.image)!} alt="" width={96} height={96} loading="lazy" className={`size-full object-cover ${out ? "grayscale" : ""}`} /> : <ProductFallback categoryId={l?.category_id} size={28} />}
+                  {l?.image ? <img src={imageUrl(l.image)!} alt="" width={96} height={96} loading="lazy" referrerPolicy="no-referrer" className={`size-full object-cover ${out ? "grayscale" : ""}`} /> : <ProductFallback categoryId={l?.category_id} size={28} />}
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex items-start justify-between gap-3">

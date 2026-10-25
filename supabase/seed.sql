@@ -140,6 +140,22 @@ begin
   from public.categories c where c.tenant_id = v_myshop_id and c.slug = 'premium-footwear'
   on conflict (tenant_id, slug) do nothing;
 
+  -- Product images for myshop
+  insert into public.product_images (tenant_id, product_id, storage_path, alt_en, is_primary, sort_order)
+  select p.tenant_id, p.id, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1000', 'Apple MacBook Pro 14"', true, 0
+  from public.products p where p.tenant_id = v_myshop_id and p.slug = 'apple-macbook-pro-14-m3'
+  on conflict (product_id) where is_primary do update set tenant_id = excluded.tenant_id, storage_path = excluded.storage_path;
+
+  insert into public.product_images (tenant_id, product_id, storage_path, alt_en, is_primary, sort_order)
+  select p.tenant_id, p.id, 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?q=80&w=1000', 'Organic Hass Avocados (Pack of 4)', true, 0
+  from public.products p where p.tenant_id = v_myshop_id and p.slug = 'organic-hass-avocados-pack'
+  on conflict (product_id) where is_primary do update set tenant_id = excluded.tenant_id, storage_path = excluded.storage_path;
+
+  insert into public.product_images (tenant_id, product_id, storage_path, alt_en, is_primary, sort_order)
+  select p.tenant_id, p.id, 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=1000', 'Nike Air Force 1 ''07', true, 0
+  from public.products p where p.tenant_id = v_myshop_id and p.slug = 'nike-air-force-1-07'
+  on conflict (product_id) where is_primary do update set tenant_id = excluded.tenant_id, storage_path = excluded.storage_path;
+
   -- --- Dedicated Admin for family-mart ---
   insert into public.tenant_members (tenant_id, user_id, role)
     values (v_fm_id, 'a0000000-0000-0000-0000-000000000003', 'owner')

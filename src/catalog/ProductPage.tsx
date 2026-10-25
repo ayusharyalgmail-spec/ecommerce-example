@@ -14,6 +14,7 @@ import { useTitle } from "@/components/ui";
 import { CARD_COLUMNS, type CardProduct } from "@/components/Product";
 import { demo, recordView } from "./data";
 import { demoOn } from "./demoMode";
+import { DEMO_IMAGES } from "./demo/images";
 import { CardGrid, ProductCard, ProductFallback } from "./ProductCard";
 import { PAGE_X } from "./layout";
 import { lineIssue, minQty } from "@/lib/minQty";
@@ -52,7 +53,9 @@ function Gallery({ images, name, locale, categoryId }: { images: Img[]; name: st
             <li key={m.id} className="aspect-square w-full shrink-0 snap-center" style={{ background: m.blur_color ?? "var(--surface-2)" }}>
               <button type="button" className="block size-full" aria-label={t("pdp.zoom")} onClick={() => setZoom(true)}>
                 <img src={imageUrl(m.storage_path)!} alt={alt(m)} width={m.width ?? 1200} height={m.height ?? 1200}
-                  fetchPriority={n === 0 ? "high" : "auto"} loading={n === 0 ? "eager" : "lazy"} decoding="async" onLoad={() => setLoaded((s) => ({ ...s, [m.id]: true }))}
+                  fetchPriority={n === 0 ? "high" : "auto"} loading={n === 0 ? "eager" : "lazy"} decoding="async"
+                  referrerPolicy="no-referrer"
+                  onLoad={() => setLoaded((s) => ({ ...s, [m.id]: true }))}
                   className={`size-full object-contain transition-opacity duration-300 ${loaded[m.id] ? "opacity-100" : "opacity-0"}`} />
               </button>
             </li>
@@ -74,7 +77,7 @@ function Gallery({ images, name, locale, categoryId }: { images: Img[]; name: st
                 <button type="button" aria-label={t("pdp.show_image", { n: n + 1 })} aria-current={n === i} onClick={() => go(n)}
                   className={`relative block size-16 overflow-hidden rounded-md border-2 before:absolute before:-inset-1 before:content-[''] ${n === i ? "border-brand-strong" : "border-line"}`}
                   style={{ background: m.blur_color ?? "var(--surface-2)" }}>
-                  <img src={imageUrl(m.storage_path)!} alt="" width={64} height={64} loading="lazy" className="size-full object-cover" />
+                  <img src={imageUrl(m.storage_path)!} alt="" width={64} height={64} loading="lazy" referrerPolicy="no-referrer" className="size-full object-cover" />
                 </button>
               </li>
             ))}
@@ -83,7 +86,7 @@ function Gallery({ images, name, locale, categoryId }: { images: Img[]; name: st
       )}
       <Dialog open={zoom} onOpenChange={setZoom} title={name} closeLabel={t("common.close")} className="max-w-3xl">
         <div className="max-h-[70dvh] overflow-auto [touch-action:pinch-zoom_pan-x_pan-y]">
-          <img src={imageUrl(images[i].storage_path)!} alt={alt(images[i])} className="mx-auto max-h-[70dvh] w-auto max-w-none" style={{ maxWidth: "100%" }} />
+          <img src={imageUrl(images[i].storage_path)!} alt={alt(images[i])} referrerPolicy="no-referrer" className="mx-auto max-h-[70dvh] w-auto max-w-none" style={{ maxWidth: "100%" }} />
         </div>
         {images.length > 1 && (
           <div className="mt-3 flex justify-between">
@@ -170,7 +173,21 @@ export default function ProductPage() {
   const min = minOn ? minQty((p as { min_purchase_qty?: number }).min_purchase_qty) : 1;
   const out = lineIssue(min, available, min) === "out";
   const buyQty = Math.max(qty, min);
-  const images = ([...p.product_images] as Img[]).sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);
+  const fallbackPhotos = p.slug && DEMO_IMAGES[p.slug.replace(/^demo-/, "")]
+    ? [{
+        id: p.id,
+        storage_path: DEMO_IMAGES[p.slug.replace(/^demo-/, "")].src,
+        alt_en: p.name_en,
+        alt_ne: p.name_ne,
+        is_primary: true,
+        sort_order: 0,
+        width: DEMO_IMAGES[p.slug.replace(/^demo-/, "")].w,
+        height: DEMO_IMAGES[p.slug.replace(/^demo-/, "")].h,
+        blur_color: null,
+      }]
+    : [];
+  const rawImgs = p.product_images?.length ? p.product_images : fallbackPhotos;
+  const images = ([...rawImgs] as Img[]).sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);
   const avg = p.review_count ? p.rating_sum / p.review_count : 0;
   const price = p.discount_price_paisa ?? p.price_paisa;
   const sale = p.discount_price_paisa != null && p.discount_price_paisa < p.price_paisa;

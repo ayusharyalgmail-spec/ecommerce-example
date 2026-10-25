@@ -66,11 +66,19 @@ export function ProductCard({ p, locale, priority = false, className }: { p: Car
   return (
     <li className={cn("product-card relative m-0 flex list-none flex-col rounded-lg bg-surface p-2 shadow-[var(--e1)] ring-1 ring-[var(--line)] transition-[box-shadow,transform] duration-[var(--duration-2)] ease-[var(--ease-out)] hover-fine:hover:-translate-y-0.5 hover-fine:hover:shadow-[var(--e2)]", className)}>
       <div className="relative">
-        <Link to={`/product/${p.slug}`} className="block aspect-square overflow-hidden rounded-md bg-well" tabIndex={-1} aria-hidden>
+        <Link to={`/product/${p.slug}`} className="relative block aspect-square overflow-hidden rounded-md bg-well" tabIndex={-1} aria-hidden>
           {img ? (
-            <img src={img} alt="" width={400} height={400} loading={priority ? "eager" : "lazy"} decoding="async"
-              onLoad={() => setLoaded(true)} onError={() => setFailed(true)}
-              className={cn("product-img h-full w-full object-cover", loaded ? "opacity-100" : "opacity-0", out && "opacity-60 grayscale")} />
+            <>
+              {!loaded && !failed && (
+                <div className="absolute inset-0 flex items-center justify-center bg-surface-2/60 animate-pulse">
+                  <ProductFallback categoryId={p.category_id} className="opacity-25" />
+                </div>
+              )}
+              <img src={img} alt="" width={400} height={400} loading={priority ? "eager" : "lazy"} decoding="async"
+                referrerPolicy="no-referrer"
+                onLoad={() => setLoaded(true)} onError={() => setFailed(true)}
+                className={cn("product-img h-full w-full object-cover transition-opacity duration-300 ease-out", loaded ? "opacity-100" : "opacity-0", out && "opacity-60 grayscale")} />
+            </>
           ) : <ProductFallback categoryId={p.category_id} />}
         </Link>
         {sale && <span className="absolute left-2 top-2 rounded-xs bg-accent px-2 py-0.5 text-xs font-bold text-on-accent shadow-[var(--e1)]">{t("card.off", { n: pct })}</span>}

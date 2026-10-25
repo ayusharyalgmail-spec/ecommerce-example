@@ -6,6 +6,7 @@ import { useT, pick, type Locale } from "@/lib/i18n";
 import { formatNpr } from "@/lib/money";
 import { imageUrl } from "@/lib/supabase";
 import { toggleWishlist } from "@/lib/api";
+import { DEMO_IMAGES } from "@/catalog/demo/images";
 
 export function AddToCart({ productId, available, withQty = false }: { productId: string; available: number; withQty?: boolean }) {
   const { add } = useCart();
@@ -61,9 +62,17 @@ export type CardProduct = {
 export const CARD_COLUMNS =
   "id,slug,category_id,name_en,name_ne,price_paisa,discount_price_paisa,discount_label_en,discount_label_ne,stock_quantity,reserved_quantity,low_stock_threshold,min_purchase_qty,rating_sum,review_count,product_images(storage_path,is_primary,sort_order)";
 
-export function primaryImage(p: Pick<CardProduct, "product_images">) {
+export function primaryImage(p: Pick<CardProduct, "product_images"> & { slug?: string }) {
   const imgs = [...(p.product_images ?? [])].sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order);
-  return imageUrl(imgs[0]?.storage_path);
+  const found = imageUrl(imgs[0]?.storage_path);
+  if (found) return found;
+  if (p.slug) {
+    const slugKey = p.slug.replace(/^demo-/, "");
+    if (DEMO_IMAGES[slugKey]?.src) {
+      return DEMO_IMAGES[slugKey].src;
+    }
+  }
+  return null;
 }
 
 export function ProductCard({ p, locale }: { p: CardProduct; locale: Locale }) {

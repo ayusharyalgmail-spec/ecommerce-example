@@ -33,7 +33,7 @@ function FeaturedChip({ p, locale }: { p: CardProduct; locale: Locale }) {
   const price = p.discount_price_paisa ?? p.price_paisa;
   return (
     <Link to={`/product/${p.slug}`} className="flex w-64 max-w-[calc(100%-1.5rem)] items-center gap-3 rounded-lg bg-surface p-2.5 pr-4 text-ink no-underline shadow-[var(--e3)] ring-1 ring-[var(--line)] transition-transform duration-[var(--duration-2)] hover-fine:hover:-translate-y-0.5">
-      <img src={primaryImage(p)!} alt="" width={56} height={56} className="size-14 shrink-0 rounded-md bg-well object-cover" />
+      <img src={primaryImage(p)!} alt="" width={56} height={56} referrerPolicy="no-referrer" className="size-14 shrink-0 rounded-md bg-well object-cover" />
       <span className="min-w-0">
         <span className="block text-xs font-semibold text-accent">{p.discount_price_paisa != null ? t("home.hero.deal") : t("home.hero.new")}</span>
         <span className="block truncate text-sm font-semibold">{pick(locale, p.name_en, p.name_ne)}</span>
@@ -81,12 +81,13 @@ function Hero() {
             width={1200}
             height={900}
             fetchPriority="high"
+            referrerPolicy="no-referrer"
             className="aspect-[4/3] w-full rounded-xl bg-well object-cover shadow-[var(--e2)] md:aspect-[5/4]"
           />
         ) : collage.length >= 2 ? (
           <div aria-hidden className="grid aspect-[4/3] grid-cols-[1.4fr_1fr] grid-rows-2 gap-3 md:aspect-[5/4]">
             {collage.map((p, i) => (
-              <img key={p.id} src={primaryImage(p)!} alt="" className={cn("size-full rounded-xl bg-well object-cover shadow-[var(--e1)]", i === 0 && "row-span-2", collage.length === 2 && i === 1 && "row-span-2")} />
+              <img key={p.id} src={primaryImage(p)!} alt="" referrerPolicy="no-referrer" className={cn("size-full rounded-xl bg-well object-cover shadow-[var(--e1)]", i === 0 && "row-span-2", collage.length === 2 && i === 1 && "row-span-2")} />
             ))}
           </div>
         ) : (
@@ -96,6 +97,7 @@ function Hero() {
             width={1200}
             height={900}
             fetchPriority="high"
+            referrerPolicy="no-referrer"
             className="aspect-[4/3] w-full rounded-xl bg-well object-cover shadow-[var(--e2)] md:aspect-[5/4]"
           />
         )}

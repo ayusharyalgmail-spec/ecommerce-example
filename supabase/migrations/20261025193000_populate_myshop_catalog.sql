@@ -187,8 +187,9 @@ on conflict (tenant_id, slug) do update set
   status = 'published';
 
 -- 6. Insert primary images for each product
-insert into public.product_images (product_id, storage_path, alt_en, is_primary, sort_order)
+insert into public.product_images (tenant_id, product_id, storage_path, alt_en, is_primary, sort_order)
 select
+  p.tenant_id,
   p.id as product_id,
   tmp.image_url as storage_path,
   tmp.name_en as alt_en,
@@ -198,5 +199,16 @@ from temp_myshop_products tmp
 join public.tenants t on t.slug = 'myshop'
 join public.products p on p.tenant_id = t.id and p.slug = tmp.slug
 on conflict (product_id) where is_primary do update set
+  tenant_id = excluded.tenant_id,
   storage_path = excluded.storage_path,
   alt_en = excluded.alt_en;
+
+-- 7. Ensure all product_images carry the correct tenant_id matching their product
+update public.product_images pi
+set tenant_id = p.tenant_id
+from public.products p
+where p.id = pi.product_id
+  and pi.tenant_id is distinct from p.tenant_id;
+
+-- 8. Grant select permissions for public storefront
+grant select on public.product_images to anon, authenticated;
