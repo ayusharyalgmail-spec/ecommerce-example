@@ -19,9 +19,26 @@ export function useTenantBySlug(slug: string | undefined) {
     staleTime: FIVE_MIN,
     queryFn: async (): Promise<Tenant | null> => {
       if (!slug) return null;
-      const { data, error } = await supabase.rpc("get_tenant_by_slug", { p_slug: slug });
-      if (error) throw new Error(error.message);
-      return (data as Tenant) ?? null;
+      // Direct select from tenants table via anon client
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("*")
+        .eq("slug", slug)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (!error && data) {
+        const t = data as Record<string, unknown>;
+        return {
+          ...t,
+          business_name: (t.business_name ?? t.name ?? slug) as string,
+          name: (t.name ?? t.business_name ?? slug) as string,
+        } as Tenant;
+      }
+
+      const { data: rpcData, error: rpcErr } = await supabase.rpc("get_tenant_by_slug", { p_slug: slug });
+      if (rpcErr) throw new Error(rpcErr.message);
+      return (rpcData as Tenant) ?? null;
     },
   });
 }

@@ -13,6 +13,7 @@ export type Tenant = {
   id: string;
   slug: string;
   business_name: string;
+  name?: string;
   business_name_ne: string | null;
   tagline: string | null;
   tagline_ne: string | null;
@@ -101,15 +102,69 @@ const HUB: TenantState = { mode: "hub", tenant: null, tenantId: null, slug: null
 const Ctx = createContext<TenantState>(HUB);
 
 /** Minimal flagship record used when the database has no `ecommerce` row yet (or is unreachable). Never carries an id. */
-const FLAGSHIP_FALLBACK = { slug: FLAGSHIP_SLUG, business_name: "Ecommerce", business_name_ne: null, brand_primary: null } as unknown as Tenant;
+const FLAGSHIP_FALLBACK = { slug: FLAGSHIP_SLUG, business_name: "Ecommerce", name: "Ecommerce", business_name_ne: null, brand_primary: null } as unknown as Tenant;
+
+/** Fetches tenant by slug via standard public anon client. */
+export async function getTenantBySlug(slug: string): Promise<Tenant | null> {
+  // 1. Direct SELECT on public.tenants table using the public anon client
+  if (typeof supabase?.from === "function") {
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("*")
+      .eq("slug", slug)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (!error && data) {
+      const t = data as Record<string, unknown>;
+      return {
+        ...t,
+        business_name: (t.business_name ?? t.name ?? slug) as string,
+        name: (t.name ?? t.business_name ?? slug) as string,
+      } as Tenant;
+    }
+  }
+
+  // 2. Fallback to RPC if direct table select was empty or RPC environment is active
+  if (typeof supabase?.rpc === "function") {
+    const { data, error } = await supabase.rpc("get_tenant_by_slug", { p_slug: slug });
+    if (!error && data) return data as Tenant;
+  }
+
+  return null;
+}
 
 async function fetchTenant(ref: TenantRef): Promise<Tenant | null> {
   if (ref.kind === "hub") return null;
-  const { data, error } = ref.kind === "slug"
-    ? await supabase.rpc("get_tenant_by_slug", { p_slug: ref.slug })
-    : await supabase.rpc("get_tenant_by_domain", { p_domain: ref.domain });
-  if (error) throw new Error(error.message);
-  return (data as Tenant | null) ?? null;
+  if (ref.kind === "slug") {
+    return getTenantBySlug(ref.slug);
+  }
+
+  // Domain lookup
+  if (typeof supabase?.from === "function") {
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("*")
+      .eq("custom_domain", ref.domain)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (!error && data) {
+      const t = data as Record<string, unknown>;
+      return {
+        ...t,
+        business_name: (t.business_name ?? t.name ?? ref.domain) as string,
+        name: (t.name ?? t.business_name ?? ref.domain) as string,
+      } as Tenant;
+    }
+  }
+
+  if (typeof supabase?.rpc === "function") {
+    const { data, error } = await supabase.rpc("get_tenant_by_domain", { p_domain: ref.domain });
+    if (!error && data) return data as Tenant;
+  }
+
+  return null;
 }
 
 /** One React Query cache per tenant, so nothing cached for one store can ever render in another (and no key needs a prefix). */

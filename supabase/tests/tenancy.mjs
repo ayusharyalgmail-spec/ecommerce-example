@@ -28,10 +28,11 @@ const FM = "20000000-0000-0000-0000-000000000001", DRAFT = "20000000-0000-0000-0
 await db.exec(`
   insert into public.tenants (id, slug, business_name, status, features) values
     ('${FM}', 'family-mart', 'Family Mart', 'active', '{"reviews":true}'),
-    ('${DRAFT}', 'draft-shop', 'Draft Shop', 'draft', '{}');
-  insert into public.platform_admins values ('${U.admin}');
-  insert into public.staff_members (user_id, role, tenant_id) values ('${U.flagOwner}', 'owner', '${FLAG}'), ('${U.fmOwner}', 'owner', '${FM}');
-  insert into public.store_settings (tenant_id, store_name, slug) values ('${FM}', 'Family Mart', 'family-mart'), ('${DRAFT}', 'Draft', 'draft');
+    ('${DRAFT}', 'draft-shop', 'Draft Shop', 'draft', '{}')
+  on conflict (slug) do update set id = excluded.id, status = excluded.status, features = excluded.features;
+  insert into public.platform_admins values ('${U.admin}') on conflict do nothing;
+  insert into public.staff_members (user_id, role, tenant_id) values ('${U.flagOwner}', 'owner', '${FLAG}'), ('${U.fmOwner}', 'owner', '${FM}') on conflict do nothing;
+  insert into public.store_settings (tenant_id, store_name, slug) values ('${FM}', 'Family Mart', 'family-mart'), ('${DRAFT}', 'Draft', 'draft') on conflict do nothing;
   insert into public.categories (tenant_id, slug, name_en) values ('${FLAG}','groceries','G'), ('${FM}','groceries','G'), ('${DRAFT}','groceries','G');
   insert into public.products (id, tenant_id, slug, sku, name_en, price_paisa, stock_quantity, status, min_purchase_qty) values
     ('30000000-0000-0000-0000-000000000001','${FLAG}','rice','RICE','Rice A',10000,50,'published',1),

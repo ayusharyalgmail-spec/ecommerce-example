@@ -3,9 +3,21 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const rpc = vi.fn();
-vi.mock("@/lib/supabase", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) }, SUPABASE_URL: "http://x" }));
+const from = vi.fn(() => ({
+  select: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  single: vi.fn().mockResolvedValue({ data: null, error: null }),
+  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+}));
+vi.mock("@/lib/supabase", () => ({
+  supabase: {
+    rpc: (...a: any[]) => (rpc as any)(...a),
+    from: (...a: any[]) => (from as any)(...a),
+  },
+  SUPABASE_URL: "http://x",
+}));
 
-import { TenantProvider, useTenant } from "./TenantContext";
+import { TenantProvider, useTenant, getTenantBySlug } from "./TenantContext";
 
 function Probe() {
   const t = useTenant();
@@ -41,4 +53,24 @@ describe("TenantProvider", () => {
     show({ kind: "slug", slug: "myshop", via: "subdomain" });
     await waitFor(() => expect(screen.getByTestId("p").textContent).toBe("store|myshop|t-myshop|false|true|false|"));
   });
+  it("loads tenant directly from tenants table via public anon client", async () => {
+    from.mockReturnValueOnce({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { id: "t-direct", slug: "family-mart", name: "Family Mart", status: "active", features: { coupons: true } },
+              error: null,
+            }),
+          }),
+        }),
+      }),
+    } as any);
+
+    const t = await getTenantBySlug("family-mart");
+    expect(t?.id).toBe("t-direct");
+    expect(t?.name).toBe("Family Mart");
+    expect(t?.business_name).toBe("Family Mart");
+  });
 });
+

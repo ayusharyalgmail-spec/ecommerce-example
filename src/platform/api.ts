@@ -1,5 +1,16 @@
-// Tenant mutation API — save profile, services, gallery, inquiries, analytics.
 import { supabase } from "@/lib/supabase";
+
+// ---- Fetch tenant by slug (public anon read) ----
+export async function getTenantBySlug(slug: string) {
+  const { data, error } = await supabase
+    .from("tenants")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+  if (error) return null;
+  return data;
+}
 
 // ---- Record page view (fire and forget, no await needed) ----
 export function recordPageView(tenantId: string, page: string) {
